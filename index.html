@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f5ff">
+  <meta name="format-detection" content="telephone=no">
+  <title>Träna gångertabellen</title>
+  <!-- Use this picture for the iPhone Home Screen icon and browser tab. -->
+  <link rel="apple-touch-icon" sizes="512x512" href="./gangertabellen-icon.png">
+  <link rel="icon" type="image/png" href="./gangertabellen-icon.png">
+  <!-- The app is in one file. It needs no CSS or JavaScript download. -->
+  <style>
+    /* Set the main font and page colors. */
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1e293b;background:#f7f5ff;-webkit-text-size-adjust:100%}
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;min-height:100dvh;background:radial-gradient(circle at 15% 10%,#e7e6ff,transparent 42%),radial-gradient(circle at 90% 95%,#fce7f3,transparent 42%),#f8fafc}
+    main{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:max(22px,env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left))}
+    .card{position:relative;isolation:isolate;width:min(100%,530px);min-width:0;background:#fff;border:1px solid #e9e5f6;border-radius:24px;box-shadow:0 20px 60px -30px #4338ca66;padding:clamp(20px,6vw,36px)}
+    h1{font-size:clamp(27px,6vw,36px);line-height:1.15;letter-spacing:-.04em;margin:0 0 8px}
+    h2{font-size:23px;margin:0 0 12px}
+    h3{font-size:18px;margin:22px 0 8px}
+    .sub{color:#526277;margin:0 0 20px;line-height:1.45}
+    .language-row{display:flex;align-items:center;justify-content:flex-end;margin:-4px 0 18px;gap:8px}
+    .language-row span{font-size:14px;font-weight:700;color:#51467d}
+    .language-switch{display:inline-flex;gap:4px;padding:4px;border:1px solid #ddd6fe;background:#f5f3ff;border-radius:13px}
+    .language-switch button{width:auto;min-height:44px;min-width:54px;padding:7px 10px;border:0;border-radius:9px;background:transparent;color:#493773;font-size:15px}
+    .language-switch button[aria-pressed="true"]{background:#6d28d9;color:#fff}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-bottom:18px}
+    .pill{background:#f5f3ff;border:1px solid #ddd6fe;color:#4c1d95;border-radius:999px;padding:8px 12px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+    .clock{background:#ecfeff;border-color:#a5f3fc;color:#155e75}
+    /* Keep player cards and result cards in a clear two-column grid. */
+    .profile-grid,.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .profile-card,.stat{min-width:0;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:15px;padding:15px}
+    .profile-card{text-align:center}
+    .animal{font-size:48px;line-height:1.2;display:block;margin-bottom:3px}
+    .profile-card strong{display:block;font-size:20px}
+    .profile-card span.count{display:block;color:#475569;font-size:14px;margin:5px 0 12px}
+    .profile-card button{min-height:46px}
+    .profile-card strong{overflow-wrap:anywhere}
+    .profile-card .animal{font-size:48px}
+    .create-box{border:1px solid #ddd6fe;background:#fbfaff;border-radius:16px;padding:18px;margin-top:16px}
+    .create-box h2{margin-bottom:8px}
+    .create-box label{margin-top:14px}
+    /* Show the new profile before it is saved. Keep the card readable on a phone. */
+    .profile-preview{display:flex;align-items:center;gap:14px;min-width:0;margin:18px 0 16px;padding:14px 16px;border:1px solid #c4b5fd;border-radius:15px;background:#f5f3ff}
+    .profile-preview-icon{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:14px;background:#fff;font-size:39px;line-height:1}
+    .profile-preview-text{min-width:0}
+    .profile-preview-label{display:block;font-size:13px;font-weight:700;color:#493773;margin-bottom:4px}
+    .profile-preview-name{display:block;font-size:21px;font-weight:800;color:#312e81;overflow-wrap:anywhere}
+    .emoji-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:10px}
+    .emoji-grid button{height:50px;min-height:50px;padding:3px;border:2px solid #d4c8ed;background:white;font-size:26px;line-height:1}
+    .emoji-grid button[aria-pressed="true"]{border-color:#6d28d9;background:#ece6ff}
+    .name-help{color:#526277;font-size:14px;margin:7px 0 0;line-height:1.4}
+    .create-error{color:#9f1239;font-weight:700;margin:10px 0 0;min-height:0}
+    .create-error:empty{display:none}
+    select{display:block;width:100%;min-height:50px;border:2px solid #bdc7d6;border-radius:12px;background:white;color:#1e293b;padding:8px 12px;font:inherit;font-size:16px}
+    select:focus{outline:3px solid #ede9fe;border-color:#6d28d9}
+    .small-heading{font-weight:750;color:#51467d;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+    .question{width:100%;padding:24px 12px;text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:18px;margin-bottom:20px}
+    .question small{display:block;color:#6d28d9;font-weight:750;font-size:14px}
+    .expression{color:#312e81;font-size:clamp(37px,10vw,60px);font-weight:800;letter-spacing:-.055em;font-variant-numeric:tabular-nums;line-height:1.2;margin:6px 0 0;overflow-wrap:anywhere}
+    label{display:block;font-weight:750;margin-bottom:8px}
+    input{display:block;width:100%;max-width:100%;min-width:0;height:54px;border:2px solid #bdc7d6;border-radius:12px;background:#fff;color:#1e293b;padding:0 16px;font:inherit;font-size:20px;outline:none;-webkit-appearance:none;appearance:none}
+    input::placeholder{color:#64748b;opacity:1}
+    input:focus{border-color:#6d28d9;box-shadow:0 0 0 3px #ede9fe}
+    input:disabled{background:#f1f5f9;color:#475569}
+    .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    button{width:100%;min-width:0;min-height:52px;padding:10px 12px;border-radius:12px;font:inherit;font-weight:750;line-height:1.3;white-space:normal;overflow-wrap:anywhere;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .15s,transform .15s}
+    button:hover:not(:disabled){transform:translateY(-2px)}
+    button:focus-visible{outline:3px solid #a78bfa;outline-offset:2px}
+    button:disabled{opacity:.52;cursor:not-allowed}
+    .primary{background:#6d28d9;color:white;border:1px solid #6d28d9}
+    .primary:hover:not(:disabled){background:#5b21b6}
+    .secondary{background:white;color:#5b21b6;border:1px solid #a78bfa}
+    .secondary:hover{background:#f5f3ff}
+    .finish{margin-top:12px;border:1px solid #9a6300;background:#fff9e8;color:#754600}
+    .finish:hover{background:#ffefbd}
+    .danger{border:1px solid #be123c;background:white;color:#9f1239;margin-top:16px}
+    .danger:hover{background:#fff1f2}
+    .danger + .danger{margin-top:10px}
+    .tiny-button{min-height:44px;width:auto;padding:7px 10px;font-size:13px}
+    .feedback{width:100%;margin-top:16px;padding:12px 14px;border-radius:12px;font-weight:700;line-height:1.45;overflow-wrap:anywhere}
+    .feedback:empty{display:none}
+    .feedback.success{color:#166534;background:#dcfce7;border:1px solid #86efac}
+    .feedback.error,.feedback.notice{color:#874c00;background:#fffbeb;border:1px solid #fcd34d}
+    .footer{margin:18px 0 0;text-align:center;color:#526277;font-size:13px;line-height:1.4}
+    .stat span{display:block;font-size:13px;line-height:1.3;color:#493773;font-weight:700}
+    .stat strong{display:block;font-size:clamp(20px,5vw,27px);margin-top:5px;color:#312e81;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    .history{list-style:none;padding:0;margin:0 0 16px;max-height:min(300px,45dvh);overflow:auto;-webkit-overflow-scrolling:touch}
+    .history li{border-bottom:1px solid #e2e8f0;padding:10px 0;overflow-wrap:anywhere}
+    .history li:last-child{border-bottom:none}
+    .history small{display:block;color:#475569;line-height:1.55;margin-top:2px}
+    .empty{color:#526277}
+    .session{border:1px solid #ddd6fe;background:#fbfaff;border-radius:12px;margin:8px 0;overflow:hidden}
+    .session summary{padding:12px;cursor:pointer;font-weight:750;line-height:1.4}
+    .session summary:focus-visible{outline:3px solid #a78bfa;outline-offset:-3px}
+    .session-body{padding:0 12px 12px;color:#475569;font-size:14px}
+    .session-body ul{margin:6px 0 0;padding-left:20px}
+    .session-body li{padding:4px 0}
+    /* These pieces move across the card after a correct answer. */
+    #confetti{position:absolute;z-index:5;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+    .piece{position:absolute;top:32%;width:10px;height:15px;border-radius:3px;opacity:0;animation:toss 1.35s ease-out forwards}
+    @keyframes toss{0%{opacity:0;transform:translate(0,0) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--spin))}}
+    .wiggle{animation:wiggle .45s ease-in-out}
+    @keyframes wiggle{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-1deg)}65%{transform:translateX(5px) rotate(1deg)}}
+    [hidden]{display:none!important}
+    /* Keep content inside the screen on a phone. Leave room for Safari bars. */
+    @media(max-width:600px){main{align-items:start}.card{padding:clamp(18px,5vw,28px);border-radius:22px}h1{font-size:clamp(28px,7vw,34px)}.topbar{margin-bottom:16px}.question{padding:20px 10px;margin-bottom:18px}.profile-card{padding:12px}.profile-card strong{font-size:18px}.animal{font-size:42px}.sub{margin-bottom:18px}}
+    @media(max-width:390px){.actions,.profile-grid{grid-template-columns:minmax(0,1fr)}.emoji-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.profile-card{padding:12px}.profile-card .animal{display:inline-block;margin:0 8px 0 0;font-size:33px;vertical-align:middle}.profile-card strong{display:inline-block;vertical-align:middle}.profile-card .count{margin:3px 0 10px}}
+    @media(max-height:620px){main{align-items:start}.question{padding:15px 10px;margin-bottom:15px}.card{padding-top:20px;padding-bottom:20px}}
+    @media(max-width:700px) and (orientation:landscape){main{align-items:start}.card{margin-inline:auto}}
+    /* Limit motion for a person who selects reduced motion on the device. */
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main><section class="card" aria-labelledby="title">
+    <!-- Change language here. This also changes the text in saved results. -->
+    <div class="language-row"><span id="language-label">Språk:</span><div class="language-switch" role="group" aria-labelledby="language-label"><button type="button" id="lang-sv" lang="sv" aria-pressed="true">SV</button><button type="button" id="lang-en" lang="en" aria-pressed="false">EN</button></div></div>
+    <h1 id="title" data-i18n="title">Träna gångertabellen</h1>
+    <p class="sub" id="intro" data-i18n="intro">Välj vem som ska spela!</p>
+    <div id="storage-warning" class="feedback notice" role="status" hidden data-i18n="storageWarning">Det går inte att spara här just nu. Resultaten finns bara tills du stänger sidan.</div>
+    <!-- First screen: create or choose a personal profile. -->
+    <section id="choose" aria-label="Välj spelare" data-i18n-aria="chooseLabel">
+      <div class="profile-grid" id="profile-list"></div>
+      <p id="no-profiles" class="empty" data-i18n="noProfiles">Inga spelare än. Gör en profil för att börja!</p>
+      <p id="profile-limit" class="empty" hidden data-i18n="profileLimit">Du kan ha högst 4 profiler.</p>
+      <div id="create-box" class="create-box">
+        <h2 data-i18n="addProfile">Lägg till spelare</h2>
+        <form id="create-profile" novalidate>
+          <label for="new-name" data-i18n="profileName">Namn</label>
+          <input id="new-name" type="text" maxlength="24" autocomplete="off" autocapitalize="words" placeholder="Skriv ditt namn" data-i18n-placeholder="namePlaceholder" aria-describedby="name-help create-error" required>
+          <p id="name-help" class="name-help" data-i18n="nameHelp">Använd bara bokstäver och mellanslag.</p>
+          <label id="emoji-label" data-i18n="chooseEmoji">Välj en emoji</label>
+          <div class="emoji-grid" id="emoji-grid" role="group" aria-labelledby="emoji-label"></div>
+          <!-- Preview the name and emoji before a profile is saved. -->
+          <div class="profile-preview" role="group" aria-labelledby="preview-label">
+            <span class="profile-preview-icon" id="preview-emoji" aria-hidden="true">🦁</span>
+            <div class="profile-preview-text"><span class="profile-preview-label" id="preview-label" data-i18n="profilePreview">Så här blir din profil</span><strong class="profile-preview-name" id="preview-name">Ditt namn</strong></div>
+          </div>
+          <div id="import-box" hidden>
+            <label for="import-history" data-i18n="importHistory">Importera gammal profil (valfritt)</label>
+            <select id="import-history"></select>
+            <p class="footer" data-i18n="importInfo">Flytta spel från din gamla Lejonet- eller Björnen-profil. Den gamla profilen finns kvar.</p>
+          </div>
+          <p class="create-error" id="create-error" role="alert" aria-live="polite"></p>
+          <button class="primary" id="create-button" type="submit" data-i18n="createProfile">Skapa profil</button>
+        </form>
+      </div>
+      <p class="footer" data-i18n="saveInfo">Dina spel sparas i den här webbläsaren när du trycker på ”Klar”.</p>
+    </section>
+    <!-- Player screen: show saved games and the clear button. -->
+    <section id="dashboard" aria-label="Spelarens sida" data-i18n-aria="dashboardLabel" hidden>
+      <div class="topbar"><span class="pill" id="profile-name"></span><button class="secondary tiny-button" id="switch-profile" type="button" data-i18n="switchProfile">Byt spelare</button></div>
+      <h2 data-i18n="yourPage">Din sida</h2>
+      <p class="sub" data-i18n="yourGamesInfo">Här finns dina spel och dina resultat.</p>
+      <button class="primary" type="button" id="start" data-i18n="playNow">Spela nu</button>
+      <h3 data-i18n="pastGames">Tidigare spel</h3>
+      <div class="stats-grid" id="all-stats"></div>
+      <div id="session-list"></div>
+      <p id="no-sessions" class="empty" hidden data-i18n="noGames">Du har inte spelat än. Testa ett spel!</p>
+      <button class="danger" type="button" id="clear-stats" data-i18n="clearStats">Ta bort alla mina resultat</button>
+      <button class="danger" type="button" id="delete-profile" data-i18n="deleteProfile">Ta bort min profil</button>
+    </section>
+    <!-- Game screen: show the question, answer box, clock, and buttons. -->
+    <section id="game" aria-label="Spel" data-i18n-aria="gameLabel" hidden>
+      <div class="topbar"><span class="pill" id="tally">⭐ Klara: 0</span><span class="pill clock" id="timer" role="timer" aria-label="Tid på uppgiften" data-i18n-aria="timerLabel">⏱ 0:00</span></div>
+      <p class="small-heading" id="playing-as"></p>
+      <p class="sub" data-i18n="gameInfo">Räkna ut talet. Du får prova igen om det blir fel!</p>
+      <div class="question" id="question" aria-label="Uppgift" data-i18n-aria="questionLabel"><small data-i18n="whatIs">Vad blir det?</small><p class="expression" id="expression">—</p></div>
+      <form id="answer-form" novalidate>
+        <label for="answer" data-i18n="yourAnswer">Ditt svar</label>
+        <input id="answer" name="answer" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" spellcheck="false" placeholder="Skriv ett tal" data-i18n-placeholder="answerPlaceholder" aria-describedby="feedback">
+        <div class="actions"><button class="primary" id="submit" type="submit" data-i18n="submit">Svara</button><button class="secondary" id="generate" type="button" data-i18n="newQuestion">Ny uppgift</button></div>
+      </form>
+      <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
+      <button class="finish" id="finish" type="button" data-i18n="finish">Klar! Se mina resultat</button>
+      <p class="footer" data-i18n="finishInfo">Ny uppgift när du vill. Tryck på ”Klar” för att spara spelet.</p>
+    </section>
+    <!-- End screen: show the results from this game. -->
+    <section id="results" aria-label="Resultat från spelet" data-i18n-aria="resultsLabel" hidden>
+      <h2 id="results-title" tabindex="-1" data-i18n="greatJob">Bra jobbat! 🎉</h2>
+      <p class="sub"><span data-i18n="resultsIntro">Här är dina resultat,</span> <span id="results-name"></span>!</p>
+      <div class="stats-grid" id="result-stats"></div>
+      <h3 data-i18n="yourQuestions">Dina uppgifter</h3>
+      <ul class="history" id="history"></ul>
+      <p class="empty" id="empty-history" hidden data-i18n="noAnswers">Du har inte svarat på någon uppgift än.</p>
+      <div class="actions"><button class="primary" id="restart" type="button" data-i18n="playAgain">Spela igen</button><button class="secondary" id="back-to-profile" type="button" data-i18n="myPage">Min sida</button></div>
+    </section>
+    <!-- JavaScript puts confetti here. Screen readers can ignore it. -->
+    <div id="confetti" aria-hidden="true"></div>
+  </section></main>
+  <script>
+  (() => {
+    'use strict';
+    // Get one page element by its ID.
+    const $ = id => document.getElementById(id);
+    const screens = ['choose','dashboard','game','results'];
+    // Keep UI words separate from game data. Change language without changing saved scores.
+    const text = {
+      sv: {
+        title:'Träna gångertabellen', intro:'Välj vem som ska spela!',
+        storageWarning:'Det går inte att spara här just nu. Resultaten finns bara tills du stänger sidan.',
+        chooseLabel:'Välj spelare', lion:'Lejonet', bear:'Björnen',
+        saveInfo:'Dina spel sparas i den här webbläsaren när du trycker på ”Klar”.',
+        dashboardLabel:'Spelarens sida', switchProfile:'Byt spelare', yourPage:'Din sida',
+        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', pastGames:'Tidigare spel',
+        noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
+        gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
+        gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift', whatIs:'Vad blir det?',
+        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', submit:'Svara', newQuestion:'Ny uppgift',
+        finish:'Klar! Se mina resultat', finishInfo:'Ny uppgift när du vill. Tryck på ”Klar” för att spara spelet.',
+        resultsLabel:'Resultat från spelet', greatJob:'Bra jobbat! 🎉', resultsIntro:'Här är dina resultat,',
+        yourQuestions:'Dina uppgifter', noAnswers:'Du har inte svarat på någon uppgift än.',
+        playAgain:'Spela igen', myPage:'Min sida', game:'spel', games:'spel', correct:'rätt', wrong:'fel',
+        correctAnswers:'Rätta svar', wrongAttempts:'Fel försök', totalTime:'Tid totalt',
+        avgTime:'Tid per klar uppgift (snitt)', avgShort:'Snitt', skipped:'hoppade vidare',
+        done:'klart!', attempts:'Försök', enterNumber:'Skriv ett tal först. Du kan det här! ✨',
+        success:'Jaa! Rätt svar! 🎉 Bra jobbat!', tryAgain:'Nästan! 🌟 Prova igen, du klarar det!',
+        noProfiles:'Inga spelare än. Gör en profil för att börja!', profileLimit:'Du kan ha högst 4 profiler.',
+        addProfile:'Lägg till spelare', profileName:'Namn', namePlaceholder:'Skriv ditt namn', nameHelp:'Använd bara bokstäver och mellanslag.', nameLetters:'Använd bara bokstäver och mellanslag.', chooseEmoji:'Välj en emoji', profilePreview:'Så här blir din profil', previewName:'Ditt namn',
+        createProfile:'Skapa profil', choosePlayer:'Välj', deleteProfile:'Ta bort min profil',
+        importHistory:'Importera gammal profil (valfritt)', importInfo:'Flytta spel från din gamla Lejonet- eller Björnen-profil. Den gamla profilen finns kvar.',
+        noImport:'Importera inte', enterName:'Skriv ett namn först.', duplicateName:'Det namnet finns redan. Prova ett annat.',
+        limitError:'Du kan ha högst 4 profiler.',
+        clearConfirm:name => `Ta bort alla spel och resultat för ${name}? Det går inte att ångra.`,
+        deleteConfirm:name => `Ta bort profilen ${name} och alla dess spel? Det går inte att ångra.`
+      },
+      en: {
+        title:'Times table fun', intro:'Choose who will play!',
+        storageWarning:'Saving does not work here right now. Results will be lost when you close this page.',
+        chooseLabel:'Choose a player', lion:'Lion', bear:'Bear',
+        saveInfo:'Your games are saved in this browser when you tap “Finish”.',
+        dashboardLabel:'Player page', switchProfile:'Change player', yourPage:'Your page',
+        yourGamesInfo:'See your games and scores here.', playNow:'Play now', pastGames:'Past games',
+        noGames:'No games yet. Try one!', clearStats:'Delete all my results',
+        gameLabel:'Game', timerLabel:'Time on this question', tally:'Done', playing:'is playing',
+        gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question', whatIs:'What is it?',
+        yourAnswer:'Your answer', answerPlaceholder:'Type a number', submit:'Check answer', newQuestion:'New question',
+        finish:'Finish! See my results', finishInfo:'Want a new question? Tap “Finish” to save your game.',
+        resultsLabel:'Game results', greatJob:'Great job! 🎉', resultsIntro:'Here are your results,',
+        yourQuestions:'Your questions', noAnswers:'You have not answered a question yet.',
+        playAgain:'Play again', myPage:'My page', game:'game', games:'games', correct:'right', wrong:'wrong',
+        correctAnswers:'Right answers', wrongAttempts:'Wrong tries', totalTime:'Total time',
+        avgTime:'Time per finished question (average)', avgShort:'Average', skipped:'moved on',
+        done:'done!', attempts:'Tries', enterNumber:'Type a number first. You can do it! ✨',
+        success:'Yes! That is right! 🎉 Great job!', tryAgain:'Almost! 🌟 Try again. You can do it!',
+        noProfiles:'No players yet. Make a profile to start!', profileLimit:'You can have up to 4 profiles.',
+        addProfile:'Add player', profileName:'Name', namePlaceholder:'Type your name', nameHelp:'Use letters and spaces only.', nameLetters:'Use letters and spaces only.', chooseEmoji:'Choose an emoji', profilePreview:'Your new profile', previewName:'Your name',
+        createProfile:'Create profile', choosePlayer:'Choose', deleteProfile:'Delete my profile',
+        importHistory:'Import old profile (optional)', importInfo:'Bring games from your old Lion or Bear profile. The old profile stays as it is.',
+        noImport:'Do not import', enterName:'Type a name first.', duplicateName:'That name is taken. Try a different one.',
+        limitError:'You can have up to 4 profiles.',
+        clearConfirm:name => `Delete all games and results for ${name}? You cannot undo this.`,
+        deleteConfirm:name => `Delete ${name} and all their games? You cannot undo this.`
+      }
+    };
+    const languageKey = 'gangertabellen-language-v1';
+    let language = 'sv';
+    const t = key => text[language][key];
+    // A profile has a name, an emoji, an ID, and its own list of games.
+    const storageKey = 'gangertabellen-custom-profiles-v1';
+    const oldStorageKey = 'gangertabellen-profiler-v1';
+    const emojiChoices = ['🦁','🐻','🐱','🐶','🦊','🐼','🐸','🐵','🦄','🐯','🐨','🐧','🐙','🦋','🚀','⭐','🌈','⚽'];
+    let profiles = [], oldGames = { lion:[], bear:[] }, selected = null, chosenEmoji = emojiChoices[0];
+    const activeProfile = () => profiles.find(p => p.id === selected);
+    const profileName = () => { const p = activeProfile(); return p ? `${p.emoji} ${p.name}` : ''; };
+    const gamesCount = count => `${count} ${t(count === 1 ? 'game' : 'games')}`;
+    // Change visible text and accessibility text on every screen.
+    function applyLanguage() {
+      document.documentElement.lang = language;
+      document.title = t('title');
+      for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
+      for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
+      for (const node of document.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = t(node.dataset.i18nPlaceholder);
+      $('language-label').textContent = language === 'sv' ? 'Språk:' : 'Language:';
+      $('lang-sv').setAttribute('aria-pressed', String(language === 'sv'));
+      $('lang-en').setAttribute('aria-pressed', String(language === 'en'));
+      updateChooser();
+      renderEmojiPicker();
+      renderImportOptions();
+      updateProfilePreview();
+      if (selected) {
+        $('profile-name').textContent = profileName();
+        $('playing-as').textContent = `${profileName()} ${t('playing')}`;
+        $('results-name').textContent = profileName();
+        $('tally').textContent = `⭐ ${t('tally')}: ${questions.filter(q => !q.skipped).length}`;
+        if (!$('dashboard').hidden) renderDashboard();
+        if (!$('results').hidden && lastSession) renderResults(lastSession);
+        if (!$('game').hidden && feedbackKey) showFeedback(t(feedbackKey),feedbackKind);
+      }
+    }
+    function setLanguage(value) {
+      if (value !== 'sv' && value !== 'en') return;
+      language = value;
+      try { localStorage.setItem(languageKey,language); } catch { /* Game storage shows the warning. */ }
+      applyLanguage();
+    }
+
+    // These values describe the active player and the current game.
+    let current = null, questions = [], wrong = 0, started = 0, ticker = null, pausedAt = null;
+    let lastSession = null, feedbackKey = null, feedbackKind = null;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    // Show one screen. Hide the other screens.
+    function show(screen) {
+      for (const id of screens) $(id).hidden = id !== screen;
+      $('intro').hidden = screen !== 'choose';
+    }
+    // Accept only well-formed past games. This also checks old Lion and Bear games.
+    function validSession(session) {
+      return session && typeof session.date === 'string' &&
+        Number.isFinite(session.elapsedMs) && session.elapsedMs >= 0 &&
+        Number.isInteger(session.correct) && session.correct >= 0 &&
+        Number.isInteger(session.wrong) && session.wrong >= 0 &&
+        Array.isArray(session.questions) && session.questions.every(q =>
+          q && Number.isInteger(q.a) && q.a >= 1 && q.a <= 10 &&
+          Number.isInteger(q.b) && q.b >= 1 && q.b <= 10 &&
+          Number.isFinite(q.duration) && q.duration >= 0 &&
+          Array.isArray(q.attempts) && q.attempts.every(a =>
+            a && typeof a.correct === 'boolean' && Number.isFinite(a.ms) && a.ms >= 0));
+    }
+    // Read personal profiles from this browser. Keep old game data for optional import.
+    function load() {
+      try {
+        const probe = storageKey + '-test';
+        localStorage.setItem(probe, '1');
+        if (localStorage.getItem(probe) !== '1') throw new Error('Storage unavailable');
+        localStorage.removeItem(probe);
+        const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        if (Array.isArray(saved)) {
+          const seen = new Set();
+          profiles = saved.filter(p => {
+            if (!p || typeof p.id !== 'string' || p.id.length > 80 || seen.has(p.id) ||
+                typeof p.name !== 'string' || !p.name.trim() || p.name.length > 24 ||
+                typeof p.emoji !== 'string' || !emojiChoices.includes(p.emoji) ||
+                !Array.isArray(p.sessions)) return false;
+            seen.add(p.id);
+            p.sessions = p.sessions.filter(validSession);
+            return true;
+          }).slice(0,4);
+        }
+        const old = JSON.parse(localStorage.getItem(oldStorageKey) || '{}');
+        for (const key of ['lion','bear']) {
+          if (Array.isArray(old[key])) oldGames[key] = old[key].filter(validSession);
+        }
+      } catch { $('storage-warning').hidden = false; }
+    }
+    // Save the full profile list after creating, finishing, clearing, or deleting.
+    function save() {
+      try { localStorage.setItem(storageKey, JSON.stringify(profiles)); }
+      catch { $('storage-warning').hidden = false; }
+    }
+    // Pick one of 100 number pairs. Reject extra values to keep the odds equal.
+    function randomPairIndex() {
+      const limit = Math.floor(4294967296 / 100) * 100;
+      const sample = new Uint32Array(1);
+      do { crypto.getRandomValues(sample); } while (sample[0] >= limit);
+      return sample[0] % 100;
+    }
+    // Show milliseconds as minutes and seconds (for example, 1:05).
+    function time(ms) {
+      const total = Math.floor(ms / 1000);
+      return `${Math.floor(total / 60)}:${String(total % 60).padStart(2,'0')}`;
+    }
+    // Show a short time for one answer attempt (for example, 2,5 s).
+    function seconds(ms) { return `${(ms / 1000).toFixed(1).replace('.',language === 'sv' ? ',' : '.')} s`; }
+    // Draw the player list. The create form is hidden at the four-profile limit.
+    function updateChooser() {
+      const list = $('profile-list'); list.replaceChildren();
+      for (const p of profiles) {
+        const card = document.createElement('div'); card.className = 'profile-card';
+        const icon = document.createElement('span'); icon.className = 'animal'; icon.setAttribute('aria-hidden','true'); icon.textContent = p.emoji;
+        const name = document.createElement('strong'); name.textContent = p.name;
+        const count = document.createElement('span'); count.className = 'count'; count.textContent = gamesCount(p.sessions.length);
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'primary';
+        button.textContent = t('choosePlayer');
+        button.setAttribute('aria-label',`${t('choosePlayer')} ${p.name}`);
+        button.addEventListener('click', () => openDashboard(p.id));
+        card.append(icon,name,count,button); list.appendChild(card);
+      }
+      $('no-profiles').hidden = profiles.length !== 0;
+      $('create-box').hidden = profiles.length >= 4;
+      $('profile-limit').hidden = profiles.length < 4;
+    }
+    // Show the current name and emoji. This preview does not save a profile.
+    function updateProfilePreview() {
+      const name = $('new-name').value.trim().replace(/\s+/g, ' ');
+      $('preview-name').textContent = name || t('previewName');
+      $('preview-emoji').textContent = chosenEmoji;
+    }
+    // Let players choose a safe emoji from a small set.
+    function renderEmojiPicker() {
+      const grid = $('emoji-grid'); grid.replaceChildren();
+      for (const emoji of emojiChoices) {
+        const button = document.createElement('button'); button.type = 'button'; button.textContent = emoji;
+        button.setAttribute('aria-label',emoji);
+        button.setAttribute('aria-pressed',String(emoji === chosenEmoji));
+        button.addEventListener('click', () => { chosenEmoji = emoji; for (const other of grid.children) other.setAttribute('aria-pressed', String(other === button)); updateProfilePreview(); });
+        grid.appendChild(button);
+      }
+    }
+    // The old animal games stay untouched. Importing copies them to a new profile.
+    function renderImportOptions() {
+      const box = $('import-box'), select = $('import-history');
+      const value = select.value;
+      box.hidden = !oldGames.lion.length && !oldGames.bear.length;
+      select.replaceChildren();
+      for (const key of ['', 'lion', 'bear']) {
+        if (key && !oldGames[key].length) continue;
+        const option = document.createElement('option'); option.value = key;
+        option.textContent = key ? `${t(key)} (${gamesCount(oldGames[key].length)})` : t('noImport');
+        select.appendChild(option);
+      }
+      select.value = value === 'lion' || value === 'bear' ? value : '';
+    }
+    // Allow letters from all alphabets and spaces. Remove numbers and symbols.
+    // The form checks the name again before it saves a profile.
+    $('new-name').addEventListener('beforeinput', event => {
+      if (event.isComposing || event.inputType !== 'insertText' || !event.data) return;
+      if (/[^\p{L} ]/u.test(event.data)) event.preventDefault();
+    });
+    $('new-name').addEventListener('input', event => {
+      if (event.isComposing) return;
+      const field = event.currentTarget;
+      const cleaned = field.value.normalize('NFC').replace(/[^\p{L} ]/gu, '');
+      if (field.value !== cleaned) {
+        field.value = cleaned;
+        field.setSelectionRange(field.value.length, field.value.length);
+      }
+      updateProfilePreview();
+    });
+    $('new-name').addEventListener('compositionend', event => {
+      const field = event.currentTarget;
+      field.value = field.value.normalize('NFC').replace(/[^\p{L} ]/gu, '');
+      updateProfilePreview();
+    });
+    // Start with no player. A name and one emoji are required for a new profile.
+    function createProfile(event) {
+      event.preventDefault();
+      const name = $('new-name').value.trim().replace(/\s+/g,' ').normalize('NFC');
+      const error = $('create-error'); error.textContent = '';
+      if (profiles.length >= 4) { error.textContent = t('limitError'); return; }
+      if (!name || name.length > 24) { error.textContent = t('enterName'); $('new-name').focus(); return; }
+      // Check again when saving. Scripted input must not bypass the input filter.
+      if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(name)) { error.textContent = t('nameLetters'); $('new-name').focus(); return; }
+      if (profiles.some(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+        error.textContent = t('duplicateName'); $('new-name').focus(); return;
+      }
+      const bytes = new Uint32Array(2); crypto.getRandomValues(bytes);
+      const importFrom = $('import-history').value;
+      const copied = (importFrom === 'lion' || importFrom === 'bear') ? JSON.parse(JSON.stringify(oldGames[importFrom])) : [];
+      const profile = {id:`p-${bytes[0].toString(16)}-${bytes[1].toString(16)}`,name,emoji:chosenEmoji,sessions:copied};
+      profiles.push(profile); save();
+      $('new-name').value = ''; chosenEmoji = emojiChoices[0]; error.textContent = '';
+      updateChooser(); renderEmojiPicker(); updateProfilePreview(); openDashboard(profile.id);
+    }
+    // Build result cards from labels and values. Use text, not HTML strings.
+    function makeStats(container, values) {
+      container.replaceChildren();
+      for (const [label, value] of values) {
+        const box = document.createElement('div'), title = document.createElement('span'), text = document.createElement('strong');
+        box.className = 'stat'; title.textContent = label; text.textContent = value;
+        box.append(title, text); container.append(box);
+      }
+    }
+    // Add up saved games and show past games for the selected player.
+    function renderDashboard() {
+      $('profile-name').textContent = profileName();
+      const sessions = activeProfile().sessions;
+      const correct = sessions.reduce((sum, s) => sum + s.correct, 0);
+      const mistakes = sessions.reduce((sum, s) => sum + s.wrong, 0);
+      const total = sessions.reduce((sum, s) => sum + s.elapsedMs, 0);
+      const solvedDuration = sessions.reduce((sum, s) => sum + s.questions.filter(q => !q.skipped).reduce((n, q) => n + q.duration, 0), 0);
+      makeStats($('all-stats'), [[t('games'),String(sessions.length)],[t('correctAnswers'),String(correct)],[t('wrongAttempts'),String(mistakes)],[t('totalTime'),time(total)],[t('avgTime'),correct ? time(solvedDuration / correct) : '–']]);
+      $('no-sessions').hidden = sessions.length !== 0;
+      const list = $('session-list'); list.replaceChildren();
+      for (const session of [...sessions].reverse()) {
+        const details = document.createElement('details'), summary = document.createElement('summary'), body = document.createElement('div');
+        details.className = 'session'; body.className = 'session-body';
+        const timestamp = new Date(session.date);
+        const date = Number.isNaN(timestamp.getTime()) ? t('pastGames') : new Intl.DateTimeFormat(language === 'sv' ? 'sv-SE' : 'en-GB',{ dateStyle:'medium', timeStyle:'short' }).format(timestamp);
+        summary.textContent = `${date} · ${session.correct} ${t('correct')} · ${session.wrong} ${t('wrong')}`;
+        const overview = document.createElement('div');
+        overview.textContent = `${t('totalTime')}: ${time(session.elapsedMs)} · ${t('avgShort')}: ${session.correct ? time(session.questions.filter(q => !q.skipped).reduce((n,q) => n + q.duration,0) / session.correct) : '–'}`;
+        body.append(overview);
+        if (session.questions.length) {
+          const ul = document.createElement('ul');
+          for (const q of session.questions) {
+            const li = document.createElement('li');
+            li.textContent = `${q.a} × ${q.b}: ${t(q.skipped ? 'skipped' : 'correct')} · ${time(q.duration)} · ${q.attempts.map(a => `${t(a.correct ? 'correct' : 'wrong')} ${seconds(a.ms)}`).join(', ')}`;
+            ul.appendChild(li);
+          }
+          body.appendChild(ul);
+        }
+        details.append(summary,body); list.appendChild(details);
+      }
+    }
+    // Open one player's page.
+    function openDashboard(id) {
+      if (!profiles.some(p => p.id === id)) return;
+      selected = id; renderDashboard(); show('dashboard'); $('start').focus();
+    }
+    // Show a message below the answer box.
+    function showFeedback(message,kind) {
+      $('feedback').className = 'feedback' + (kind ? ' ' + kind : '');
+      $('feedback').textContent = message;
+    }
+    // Update the time shown for the active question.
+    function updateTimer() {
+      if (current && current.solvedAt === null && !document.hidden && !$('game').hidden) $('timer').textContent = '⏱ ' + time(performance.now() - current.startedAt);
+    }
+    // Keep an unfinished question only if the player tried an answer.
+    function archiveCurrent() {
+      if (current && current.solvedAt === null && current.attempts.length > 0) {
+        current.duration = performance.now() - current.startedAt;
+        current.skipped = true;
+        questions.push(current);
+      }
+      current = null;
+    }
+    // Set up a new question. A player can do this at any time.
+    function newQuestion() {
+      archiveCurrent();
+      const i = randomPairIndex(), a = Math.floor(i / 10) + 1, b = i % 10 + 1;
+      const now = performance.now();
+      current = { a,b,product:a*b,startedAt:now,attemptStartedAt:now,solvedAt:null,duration:0,attempts:[],skipped:false };
+      $('expression').textContent = `${a} × ${b} = ?`;
+      $('answer').value = ''; $('answer').disabled = false; $('submit').disabled = false;
+      $('timer').textContent = '⏱ 0:00'; feedbackKey = null; feedbackKind = null; showFeedback('',''); $('answer').focus();
+    }
+    // Start a new game. Past games stay in browser storage.
+    function startGame() {
+      questions = []; wrong = 0; current = null; lastSession = null; started = performance.now(); pausedAt = null;
+      $('playing-as').textContent = `${profileName()} ${t('playing')}`;
+      $('tally').textContent = `⭐ ${t('tally')}: 0`;
+      show('game'); newQuestion(); clearInterval(ticker); ticker = setInterval(updateTimer,100);
+    }
+    // Make a short confetti effect after a correct answer.
+    function celebrate() {
+      if (reducedMotion.matches) return;
+      const confetti = $('confetti'); confetti.replaceChildren();
+      const colors = ['#a78bfa','#fbbf24','#34d399','#fb7185','#38bdf8'];
+      for (let i=0;i<34;i++) {
+        const piece = document.createElement('span'); piece.className = 'piece';
+        piece.style.left = (20+Math.random()*60)+'%'; piece.style.backgroundColor = colors[i%colors.length];
+        piece.style.setProperty('--dx',(Math.random()*330-165)+'px');
+        piece.style.setProperty('--dy',(Math.random()*235-60)+'px');
+        piece.style.setProperty('--spin',(Math.random()*1000-500)+'deg');
+        piece.style.animationDelay = (Math.random()*.2)+'s'; confetti.appendChild(piece);
+      }
+      setTimeout(() => confetti.replaceChildren(),1700);
+    }
+    // Move the question a little after a wrong answer.
+    function encourage() {
+      if (reducedMotion.matches) return;
+      const box = $('question'); box.classList.remove('wiggle'); void box.offsetWidth; box.classList.add('wiggle');
+    }
+    // Block non-digit keys. Also remove non-digits from pasted or filled text.
+    $('answer').addEventListener('beforeinput', e => {
+      if (e.data && e.inputType.startsWith('insert') && /[^0-9]/.test(e.data)) e.preventDefault();
+    });
+    $('answer').addEventListener('input', e => {
+      const field = e.currentTarget;
+      const cleaned = field.value.replace(/[^0-9]/g,'');
+      if (field.value !== cleaned) {
+        const pos = field.selectionStart ?? field.value.length;
+        const newPos = field.value.slice(0,pos).replace(/[^0-9]/g,'').length;
+        field.value = cleaned; field.setSelectionRange(newPos,newPos);
+      }
+    });
+    // Check an answer. Save each valid attempt and its time.
+    $('answer-form').addEventListener('submit',event => {
+      event.preventDefault();
+      if (!current || current.solvedAt !== null) return;
+      const value = $('answer').value.trim();
+      if (!/^[0-9]+$/.test(value)) { feedbackKey = 'enterNumber'; feedbackKind = 'notice'; showFeedback(t(feedbackKey),feedbackKind); $('answer').focus(); return; }
+      const now = performance.now(), correct = Number(value) === current.product;
+      current.attempts.push({correct, ms:now-current.attemptStartedAt});
+      current.attemptStartedAt = now;
+      if (correct) {
+        current.solvedAt = now; current.duration = now-current.startedAt; questions.push(current);
+        $('tally').textContent = `⭐ ${t('tally')}: ${questions.filter(q => !q.skipped).length}`;
+        $('timer').textContent = '⏱ ' + time(current.duration);
+        feedbackKey = 'success'; feedbackKind = 'success'; showFeedback(t(feedbackKey),feedbackKind);
+        $('answer').disabled = true; $('submit').disabled = true; celebrate(); $('generate').focus();
+      } else {
+        wrong++; feedbackKey = 'tryAgain'; feedbackKind = 'error'; showFeedback(t(feedbackKey),feedbackKind);
+        encourage(); $('answer').focus(); $('answer').select();
+      }
+    });
+    // The player can leave a question and get a new one.
+    $('generate').addEventListener('click',newQuestion);
+    // Pause game time when the phone locks or the browser goes into the background.
+    document.addEventListener('visibilitychange', () => {
+      if ($('game').hidden) return;
+      if (document.hidden) {
+        if (pausedAt === null) pausedAt = performance.now();
+      } else if (pausedAt !== null) {
+        const pause = performance.now() - pausedAt;
+        started += pause;
+        if (current && current.solvedAt === null) {
+          current.startedAt += pause;
+          current.attemptStartedAt += pause;
+        }
+        pausedAt = null;
+        updateTimer();
+      }
+    });
+    // Show this game's results in the selected language. Saved data stays the same.
+    function renderResults(session) {
+      const {elapsedMs,correct,wrong,questions: played} = session;
+      makeStats($('result-stats'),[
+        [t('totalTime'),time(elapsedMs)],
+        [t('avgTime'),correct ? time(played.filter(q => !q.skipped).reduce((sum,q) => sum+q.duration,0)/correct) : '–'],
+        [t('correctAnswers'),String(correct)],[t('wrongAttempts'),String(wrong)]
+      ]);
+      $('results-name').textContent = profileName();
+      const list = $('history'); list.replaceChildren();
+      $('empty-history').hidden = played.length !== 0;
+      for (const [i,q] of played.entries()) {
+        const item = document.createElement('li'), title = document.createElement('strong'), detail = document.createElement('small');
+        title.textContent = `${i+1}. ${q.a} × ${q.b} – ${t(q.skipped ? 'skipped' : 'done')} (${time(q.duration)})`;
+        detail.textContent = `${t('attempts')}: ${q.attempts.map(a => `${t(a.correct ? 'correct' : 'wrong')} ${seconds(a.ms)}`).join(' · ')}`;
+        item.append(title,detail); list.appendChild(item);
+      }
+    }
+    // End the game, save it for this player, and show its results.
+    $('finish').addEventListener('click',() => {
+      const elapsedMs = (pausedAt ?? performance.now()) - started;
+      archiveCurrent(); clearInterval(ticker);
+      const correct = questions.filter(q => !q.skipped).length;
+      lastSession = {date:new Date().toISOString(),elapsedMs,correct,wrong,questions};
+      activeProfile().sessions.push(lastSession); save(); updateChooser();
+      renderResults(lastSession);
+      show('results'); $('results-title').focus();
+    });
+    // The new-player form is available from the player choice screen.
+    $('create-profile').addEventListener('submit', createProfile);
+    $('switch-profile').addEventListener('click',() => {
+      selected = null; show('choose'); updateChooser();
+      if (profiles.length < 4) $('new-name').focus();
+      else $('profile-list').querySelector('button')?.focus();
+    });
+    $('start').addEventListener('click',startGame);
+    $('restart').addEventListener('click',startGame);
+    $('back-to-profile').addEventListener('click',() => openDashboard(selected));
+    // Clearing game history keeps the player's name and emoji.
+    $('clear-stats').addEventListener('click',() => {
+      if (!window.confirm(t('clearConfirm')(profileName()))) return;
+      activeProfile().sessions = []; save(); updateChooser(); renderDashboard(); $('clear-stats').focus();
+    });
+    // Deleting a profile also deletes its past games from this browser.
+    $('delete-profile').addEventListener('click',() => {
+      if (!window.confirm(t('deleteConfirm')(profileName()))) return;
+      profiles = profiles.filter(p => p.id !== selected);
+      selected = null; save(); show('choose'); updateChooser(); renderImportOptions();
+      if (profiles.length < 4) $('new-name').focus();
+    });
+    // Load saved games, then show the player choice screen.
+    load();
+    try { const savedLanguage = localStorage.getItem(languageKey); if (savedLanguage === 'sv' || savedLanguage === 'en') language = savedLanguage; } catch { /* Use Swedish if language storage is unavailable. */ }
+    show('choose'); applyLanguage();
+    $('lang-sv').addEventListener('click',() => setLanguage('sv'));
+    $('lang-en').addEventListener('click',() => setLanguage('en'));
+  })();
+  </script>
+</body>
+</html>
