@@ -57,7 +57,9 @@
     select{display:block;width:100%;min-height:50px;border:2px solid #bdc7d6;border-radius:12px;background:white;color:#1e293b;padding:8px 12px;font:inherit;font-size:16px}
     select:focus{outline:3px solid #ede9fe;border-color:#6d28d9}
     .small-heading{font-weight:750;color:#51467d;font-size:13px;letter-spacing:.04em}
-    .question{width:100%;padding:24px 12px;text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:18px;margin-bottom:20px}
+    .question{position:relative;isolation:isolate;width:100%;padding:24px 12px;text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:18px;margin-bottom:20px}
+    /* Amber emphasizes an incorrect answer without using alarming red. */
+    .question.incorrect{border-color:#f59e0b;background:#fffbeb;box-shadow:0 0 0 3px #fde68a}
     .expression{color:#312e81;font-size:clamp(37px,10vw,60px);font-weight:800;letter-spacing:-.055em;font-variant-numeric:tabular-nums;line-height:1.2;margin:6px 0 0;overflow-wrap:anywhere}
     label{display:block;font-weight:750;margin-bottom:8px}
     input{display:block;width:100%;max-width:100%;min-width:0;height:54px;border:2px solid #bdc7d6;border-radius:12px;background:#fff;color:#1e293b;padding:0 16px;font:inherit;font-size:20px;outline:none;-webkit-appearance:none;appearance:none}
@@ -67,6 +69,11 @@
     .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
     #answer-form .actions.is-solved{grid-template-columns:minmax(0,1fr);justify-items:center}
     #answer-form .actions.is-solved #skip{max-width:240px}
+    /* The lighter fill tracks the three-second Next countdown, left to right. */
+    #skip{position:relative;isolation:isolate;overflow:hidden}
+    .next-progress{position:absolute;inset:0;background:#a78bfa;transform:scaleX(0);transform-origin:left center;pointer-events:none;z-index:-1}
+    .next-progress[hidden]{display:none}
+    .next-label{position:relative;z-index:1}
     button{width:100%;min-width:0;min-height:52px;padding:10px 12px;border-radius:12px;font:inherit;font-weight:750;line-height:1.3;white-space:normal;overflow-wrap:anywhere;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .15s,transform .15s}
     button:hover:not(:disabled){transform:translateY(-2px)}
     button:focus-visible{outline:3px solid #a78bfa;outline-offset:2px}
@@ -75,13 +82,13 @@
     .primary:hover:not(:disabled){background:#5b21b6}
     .secondary{background:white;color:#5b21b6;border:1px solid #a78bfa}
     .secondary:hover{background:#f5f3ff}
-    .finish{margin-top:12px;border:1px solid #9a6300;background:#fff9e8;color:#754600}
-    .finish:hover{background:#ffefbd}
+    .finish{margin-top:12px;border:1px solid #818cf8;background:#e0e7ff;color:#3730a3}
+    .finish:hover{background:#c7d2fe}
     .danger{border:1px solid #be123c;background:white;color:#9f1239;margin-top:16px}
     .danger:hover{background:#fff1f2}
     .danger + .danger{margin-top:10px}
     .tiny-button{min-height:44px;width:auto;padding:7px 10px;font-size:13px}
-    .feedback{width:100%;margin-top:16px;padding:12px 14px;border-radius:12px;font-weight:700;line-height:1.45;overflow-wrap:anywhere}
+    .feedback{width:100%;margin-top:16px;padding:12px 14px;border-radius:12px;font-weight:700;line-height:1.45;text-align:center;overflow-wrap:anywhere}
     .feedback:empty{display:none}
     .feedback.success{color:#166534;background:#dcfce7;border:1px solid #86efac}
     .feedback.error,.feedback.notice{color:#874c00;background:#fffbeb;border:1px solid #fcd34d}
@@ -106,10 +113,24 @@
     .session-body{padding:0 12px 12px;color:#475569;font-size:14px}
     .session-body ul{margin:6px 0 0;padding-left:20px}
     .session-body li{padding:4px 0}
-    /* These pieces move across the card after a correct answer. */
-    #confetti{position:absolute;z-index:5;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
-    .piece{position:absolute;top:32%;width:10px;height:15px;border-radius:3px;opacity:0;animation:toss 1.35s ease-out forwards}
-    @keyframes toss{0%{opacity:0;transform:translate(0,0) rotate(0)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--spin))}}
+    /* All celebrations are anchored to the question, not the whole card.
+       Their paths stay above the answer input while allowing a little spill around the question. */
+    #celebration{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:visible}
+    .effect{position:absolute;left:var(--x,50%);top:var(--y,50%);font-size:var(--size,24px);line-height:1;opacity:0;pointer-events:none;animation-delay:var(--delay,0s)}
+    .effect.confetti{width:10px;height:15px;background:var(--color);border-radius:3px;animation:confettiToss 1.4s ease-out forwards;animation-delay:var(--delay,0s)}
+    @keyframes confettiToss{0%{opacity:0;transform:translateY(-20px) rotate(0)}15%,70%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--spin))}}
+    /* Small expanding rings bloom around the center of the question. */
+    .effect.firework{width:16px;height:16px;border:3px solid var(--color);border-radius:50%;animation:fireworkRing 1.35s ease-out forwards;animation-delay:var(--delay,0s)}
+    @keyframes fireworkRing{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}16%{opacity:.95}100%{opacity:0;transform:translate(-50%,-50%) scale(5)}}
+    /* Balloons start invisibly at the bottom edge and rise above the question. */
+    .effect.balloon{animation:balloonRise 1.8s ease-out forwards;animation-delay:var(--delay,0s)}
+    @keyframes balloonRise{0%{opacity:0;transform:translate(-50%,0) rotate(-10deg)}20%,75%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--sway)),calc(-1 * var(--rise))) rotate(12deg)}}
+    /* Stars fall from above; their final position stays within the question area. */
+    .effect.starfall{animation:starFall 1.65s ease-in forwards;animation-delay:var(--delay,0s)}
+    @keyframes starFall{0%{opacity:0;transform:translate(-50%,-24px) rotate(-25deg)}18%,70%{opacity:1}100%{opacity:0;transform:translate(-50%,var(--fall)) rotate(50deg)}}
+    /* Small hearts appear around the center and drift upward, away from controls. */
+    .effect.heart{color:var(--color);animation:heartFloat 1.65s ease-out forwards;animation-delay:var(--delay,0s)}
+    @keyframes heartFloat{0%{opacity:0;transform:translate(-50%,16px) scale(.6)}20%,70%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-1 * var(--rise))) scale(1.05)}}
     .wiggle{animation:wiggle .45s ease-in-out}
     @keyframes wiggle{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px) rotate(-1deg)}65%{transform:translateX(5px) rotate(1deg)}}
     [hidden]{display:none!important}
@@ -119,7 +140,7 @@
     @media(max-height:620px){main{align-items:start}.question{padding:15px 10px;margin-bottom:15px}.card{padding-top:20px;padding-bottom:20px}}
     @media(max-width:700px) and (orientation:landscape){main{align-items:start}.card{margin-inline:auto}}
     /* Limit motion for a person who selects reduced motion on the device. */
-    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}.next-progress{display:none}}
   </style>
 </head>
 <body>
@@ -175,16 +196,16 @@
       <div class="topbar"><span class="pill" id="tally">⭐ Klara: 0</span><span class="pill clock" id="timer" role="timer" aria-label="Tid på uppgiften" data-i18n-aria="timerLabel">⏱ 0:00</span></div>
       <p class="small-heading" id="playing-as"></p>
       <p class="sub" data-i18n="gameInfo">Räkna ut talet. Du får prova igen om det blir fel!</p>
-      <div class="question" id="question" aria-label="Uppgift" data-i18n-aria="questionLabel"><p class="expression" id="expression">—</p></div>
+      <div class="question" id="question" aria-label="Uppgift" data-i18n-aria="questionLabel"><p class="expression" id="expression">—</p><div id="celebration" aria-hidden="true"></div></div>
       <form id="answer-form" novalidate>
         <label for="answer" data-i18n="yourAnswer">Ditt svar</label>
         <input id="answer" name="answer" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" spellcheck="false" placeholder="Skriv ett tal" data-i18n-placeholder="answerPlaceholder" aria-describedby="feedback">
          <!-- After a correct answer, show only a centered Next button. -->
-        <div class="actions" id="answer-actions"><button class="secondary" id="skip" type="button" data-i18n="skip">Hoppa över</button><button class="primary" id="submit" type="submit" data-i18n="submit">Svar</button></div>
+        <div class="actions" id="answer-actions"><button class="secondary" id="skip" type="button"><span class="next-progress" id="next-progress" aria-hidden="true" hidden></span><span class="next-label" id="next-label">Hoppa över</span></button><button class="primary" id="submit" type="submit" data-i18n="submit">Svar</button></div>
       </form>
       <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
       <button class="finish" id="finish" type="button" data-i18n="finish">Klar! Se mina resultat</button>
-      <p class="footer" data-i18n="finishInfo">Tryck på ”Klar” för att spara spelet.</p>
+      <p class="footer" id="finish-info" data-i18n="finishInfo">Tryck på ”Klar” för att spara spelet.</p>
     </section>
     <!-- End screen: show the results from this game. -->
     <section id="results" aria-label="Resultat från spelet" data-i18n-aria="resultsLabel" hidden>
@@ -196,8 +217,6 @@
       <p class="empty" id="empty-history" hidden data-i18n="noAnswers">Du har inte svarat på någon uppgift än.</p>
       <div class="actions"><button class="primary" id="restart" type="button" data-i18n="playAgain">Spela igen</button><button class="secondary" id="back-to-profile" type="button" data-i18n="myPage">Min sida</button></div>
     </section>
-    <!-- JavaScript puts confetti here. Screen readers can ignore it. -->
-    <div id="confetti" aria-hidden="true"></div>
   </div></main>
   <script>
   (() => {
@@ -217,7 +236,7 @@
         noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
         gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
         gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift',
-        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', submit:'Svar', skip:'Hoppa över', next:'Nästa',
+        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', submit:'Svar', skip:'Hoppa över', next:'Nästa', seeResults:'Se resultat',
         finish:'Klar! Se mina resultat', finishInfo:'Tryck på ”Klar” för att spara spelet.',
         resultsLabel:'Resultat från spelet', greatJob:'Bra jobbat! 🎉', resultsIntro:'Här är dina resultat,',
         yourQuestions:'Dina uppgifter', noAnswers:'Inga uppgifter att visa än.',
@@ -245,7 +264,7 @@
         noGames:'No games yet. Try one!', clearStats:'Delete all my results',
         gameLabel:'Game', timerLabel:'Time on this question', tally:'Solved', playing:'is playing',
         gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question',
-        yourAnswer:'Your answer', answerPlaceholder:'Type a number', submit:'Answer', skip:'Skip', next:'Next',
+        yourAnswer:'Your answer', answerPlaceholder:'Type a number', submit:'Answer', skip:'Skip', next:'Next', seeResults:'See results',
         finish:'Finish! See my results', finishInfo:'Tap “Finish” to save your game.',
         resultsLabel:'Game results', greatJob:'Great job! 🎉', resultsIntro:'Here are your results,',
         yourQuestions:'Your questions', noAnswers:'No questions to show yet.',
@@ -287,6 +306,7 @@
       $('lang-sv').setAttribute('aria-pressed', String(language === 'sv'));
       $('lang-en').setAttribute('aria-pressed', String(language === 'en'));
       updateGameActions();
+      updateFinishAction();
       updateChooser();
       renderEmojiPicker();
       renderImportOptions();
@@ -311,6 +331,10 @@
     // These values describe the active player and the current game.
     let current = null, questions = [], wrong = 0, started = 0, ticker = null, pausedAt = null;
     let lastSession = null, feedbackKey = null, feedbackKind = null;
+    // Only solved facts leave the question pool. Skipped facts stay available.
+    let solvedPairs = new Set(), lastPairIndex = null;
+    const NEXT_DELAY_MS = 3000;
+    let nextDeadline = null, nextFrame = null, nextPausedAt = null, incorrectFlashTimer = null, celebrationTimer = null;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     // Use a different title on the player chooser and dashboard. The game and results
     // already have their own context, so a second large heading would be distracting.
@@ -370,12 +394,21 @@
       try { localStorage.setItem(storageKey, JSON.stringify(profiles)); }
       catch { $('storage-warning').hidden = false; }
     }
-    // Pick one of 100 number pairs. Reject extra values to keep the odds equal.
+    // Choose uniformly among unsolved ordered pairs (1×1 through 10×10).
+    // Avoid immediately repeating a skip unless it is the sole remaining pair.
     function randomPairIndex() {
-      const limit = Math.floor(4294967296 / 100) * 100;
+      const candidates = [];
+      for (let i = 0; i < 100; i++) if (!solvedPairs.has(i)) candidates.push(i);
+      if (!candidates.length) return null;
+      if (candidates.length > 1 && lastPairIndex !== null) {
+        const previous = candidates.indexOf(lastPairIndex);
+        if (previous !== -1) candidates.splice(previous, 1);
+      }
+      // Rejection sampling avoids favoring any candidate through modulo bias.
+      const count = candidates.length, limit = Math.floor(4294967296 / count) * count;
       const sample = new Uint32Array(1);
       do { crypto.getRandomValues(sample); } while (sample[0] >= limit);
-      return sample[0] % 100;
+      return candidates[sample[0] % count];
     }
     // Show milliseconds as minutes and seconds (for example, 1:05).
     function time(ms) {
@@ -543,59 +576,151 @@
       current = null;
     }
 
-    // The active question has two actions; a solved one has a single, centered Next.
-    // Refresh this state after language switching as well as after answering.
+    // Keep a single button after success; update its label without restarting the timer.
     function updateGameActions() {
       const solved = current !== null && current.solvedAt !== null;
       $('submit').hidden = solved;
       $('answer-actions').classList.toggle('is-solved', solved);
       $('skip').classList.toggle('primary', solved);
       $('skip').classList.toggle('secondary', !solved);
-      $('skip').textContent = t(solved ? 'next' : 'skip');
+      $('next-progress').hidden = !solved;
+      const label = solved ? t(solvedPairs.size === 100 ? 'seeResults' : 'next') : t('skip');
+      const remaining = nextDeadline === null ? null : Math.max(0, nextDeadline - (nextPausedAt ?? performance.now()));
+      $('next-label').textContent = remaining === null ? label : `${label} (${Math.max(1, Math.ceil(remaining / 1000))})`;
     }
 
-    // Set up a new question without automatically archiving the previous one.
+    // An unfinished first question is not a game. Offer a direct exit to the
+    // player's page until the first question has been solved or explicitly skipped.
+    function updateFinishAction() {
+      const key = questions.length === 0 ? 'myPage' : 'finish';
+      $('finish').dataset.i18n = key;
+      $('finish').textContent = t(key);
+      $('finish-info').hidden = questions.length === 0;
+    }
+
+    function stopAutoAdvance() {
+      if (nextFrame !== null) cancelAnimationFrame(nextFrame);
+      nextFrame = null; nextDeadline = null; nextPausedAt = null;
+      $('next-progress').style.transform = 'scaleX(0)';
+    }
+    function tickAutoAdvance() {
+      nextFrame = null;
+      if (nextDeadline === null || document.hidden || $('game').hidden) return;
+      const remaining = Math.max(0, nextDeadline - performance.now());
+      const label = t(solvedPairs.size === 100 ? 'seeResults' : 'next');
+      $('next-label').textContent = `${label} (${Math.max(1, Math.ceil(remaining / 1000))})`;
+      if (!reducedMotion.matches) $('next-progress').style.transform = `scaleX(${1 - remaining / NEXT_DELAY_MS})`;
+      if (remaining === 0) {
+        // The game ends after the hundredth unique answer.
+        if (solvedPairs.size === 100) finishGame();
+        else advanceQuestion();
+        return;
+      }
+      nextFrame = requestAnimationFrame(tickAutoAdvance);
+    }
+    function startAutoAdvance() {
+      stopAutoAdvance();
+      nextDeadline = performance.now() + NEXT_DELAY_MS;
+      tickAutoAdvance();
+    }
+
+    // Set up a new question without archiving the previous one.
     function newQuestion() {
-      const i = randomPairIndex(), a = Math.floor(i / 10) + 1, b = i % 10 + 1;
+      stopAutoAdvance();
+      clearTimeout(incorrectFlashTimer);
+      $('question').classList.remove('wiggle','incorrect');
+      $('celebration').replaceChildren();
+      const i = randomPairIndex();
+      if (i === null) { finishGame(); return; }
+      lastPairIndex = i;
+      const a = Math.floor(i / 10) + 1, b = i % 10 + 1;
       const now = performance.now();
       current = { a,b,product:a*b,startedAt:now,attemptStartedAt:now,solvedAt:null,duration:0,attempts:[],skipped:false };
       $('expression').textContent = `${a} × ${b} = ?`;
       $('answer').value = ''; $('answer').disabled = false; $('submit').disabled = false;
       updateGameActions();
+      updateFinishAction();
       $('timer').textContent = '⏱ 0:00'; feedbackKey = null; feedbackKind = null; showFeedback('',''); $('answer').focus();
     }
     function advanceQuestion() {
-      // An already-solved question is saved, so Next must not archive it again.
+      stopAutoAdvance();
+      // Next never archives an already solved question a second time.
       if (current && current.solvedAt === null) archiveCurrent(true);
-      newQuestion();
+      if (solvedPairs.size === 100) finishGame();
+      else newQuestion();
     }
 
-    // Start a new game. Past games stay in browser storage.
+    // Start a new game with all 100 pairs available again.
     function startGame() {
-      questions = []; wrong = 0; current = null; lastSession = null; started = performance.now(); pausedAt = null;
+      stopAutoAdvance();
+      questions = []; solvedPairs = new Set(); lastPairIndex = null;
+      wrong = 0; current = null; lastSession = null; started = performance.now(); pausedAt = null;
       $('playing-as').textContent = `${profileName()} ${t('playing')}`;
       $('tally').textContent = `⭐ ${t('tally')}: 0`;
       show('game'); newQuestion(); clearInterval(ticker); ticker = setInterval(updateTimer,100);
     }
-    // Make a short confetti effect after a correct answer.
+
+    // Build one decorative piece without injecting HTML or loading images.
+    function addEffect(name, symbol, x, y, delay = 0, custom = {}) {
+      const node = document.createElement('span');
+      node.className = `effect ${name}`;
+      node.textContent = symbol;
+      node.style.setProperty('--x', `${x}%`);
+      node.style.setProperty('--y', `${y}%`);
+      node.style.setProperty('--delay', `${delay}s`);
+      for (const [key,value] of Object.entries(custom)) node.style.setProperty(`--${key}`,value);
+      $('celebration').appendChild(node);
+    }
+    // Select one of five distinct effects. Position everything relative to the
+    // question's dimensions so none of the visible motion reaches the answer box.
     function celebrate() {
       if (reducedMotion.matches) return;
-      const confetti = $('confetti'); confetti.replaceChildren();
+      const overlay = $('celebration'); overlay.replaceChildren();
+      clearTimeout(celebrationTimer);
+      const height = $('question').getBoundingClientRect().height;
       const colors = ['#a78bfa','#fbbf24','#34d399','#fb7185','#38bdf8'];
-      for (let i=0;i<34;i++) {
-        const piece = document.createElement('span'); piece.className = 'piece';
-        piece.style.left = (20+Math.random()*60)+'%'; piece.style.backgroundColor = colors[i%colors.length];
-        piece.style.setProperty('--dx',(Math.random()*330-165)+'px');
-        piece.style.setProperty('--dy',(Math.random()*235-60)+'px');
-        piece.style.setProperty('--spin',(Math.random()*1000-500)+'deg');
-        piece.style.animationDelay = (Math.random()*.2)+'s'; confetti.appendChild(piece);
+      const rand = (min,max) => min + Math.random() * (max - min);
+      switch (Math.floor(Math.random() * 5)) {
+        case 0: // Confetti falls from just above the question.
+          for (let i=0;i<34;i++) {
+            const y = rand(-22,18);
+            const dy = height * (rand(35,90) - y) / 100;
+            addEffect('confetti','',rand(15,85),y,rand(0,.2),{
+              color:colors[i%5],dx:`${rand(-125,125)}px`,dy:`${dy}px`,spin:`${rand(-500,500)}deg`});
+          }
+          break;
+        case 1: // Firework rings expand from the middle of the question.
+          for (let i=0;i<5;i++) addEffect('firework','',rand(28,72),rand(35,58),i*.11,{color:colors[i%5]});
+          break;
+        case 2: // Balloons emerge at the bottom of the question and float up.
+          for (let i=0;i<8;i++) addEffect('balloon','🎈',rand(10,90),100,i*.09,{
+            size:`${rand(23,31)}px`,rise:`${height+35}px`,sway:`${rand(-25,25)}px`});
+          break;
+        case 3: // Stars appear above the question and fade before its bottom edge.
+          for (let i=0;i<14;i++) {
+            const y = rand(0,18);
+            addEffect('starfall',i%3===0?'🌟':'⭐',rand(8,92),y,i*.055,{
+              size:`${rand(17,23)}px`,fall:`${height * (1 - y / 100) - 28}px`});
+          }
+          break;
+        case 4: // Hearts bloom around the middle and float upward.
+          for (let i=0;i<11;i++) {
+            const y = rand(42,65);
+            addEffect('heart','♥',rand(15,85),y,i*.065,{
+              size:`${rand(18,27)}px`,color:colors[i%5],dx:`${rand(-35,35)}px`,rise:`${height * (y / 100) + 20}px`});
+          }
+          break;
       }
-      setTimeout(() => confetti.replaceChildren(),1700);
+      celebrationTimer = setTimeout(() => overlay.replaceChildren(),1900);
     }
-    // Move the question a little after a wrong answer.
+    // Combine the familiar wiggle with a brief, gentle amber highlight.
     function encourage() {
-      if (reducedMotion.matches) return;
-      const box = $('question'); box.classList.remove('wiggle'); void box.offsetWidth; box.classList.add('wiggle');
+      const box = $('question');
+      clearTimeout(incorrectFlashTimer);
+      box.classList.remove('wiggle');
+      if (!reducedMotion.matches) { void box.offsetWidth; box.classList.add('wiggle'); }
+      box.classList.add('incorrect');
+      incorrectFlashTimer = setTimeout(() => box.classList.remove('incorrect','wiggle'),950);
     }
     // Block non-digit keys. Also remove non-digits from pasted or filled text.
     $('answer').addEventListener('beforeinput', e => {
@@ -620,11 +745,15 @@
       current.attempts.push({correct, ms:now-current.attemptStartedAt});
       current.attemptStartedAt = now;
       if (correct) {
+        clearTimeout(incorrectFlashTimer);
+        $('question').classList.remove('incorrect','wiggle');
         current.solvedAt = now; current.duration = now-current.startedAt; questions.push(current);
-        $('tally').textContent = `⭐ ${t('tally')}: ${questions.filter(q => !q.skipped).length}`;
+        solvedPairs.add((current.a - 1) * 10 + current.b - 1);
+        $('tally').textContent = `⭐ ${t('tally')}: ${solvedPairs.size}`;
         $('timer').textContent = '⏱ ' + time(current.duration);
         feedbackKey = 'success'; feedbackKind = 'success'; showFeedback(t(feedbackKey),feedbackKind);
-        $('answer').disabled = true; $('submit').disabled = true; updateGameActions(); celebrate(); $('skip').focus();
+        $('answer').disabled = true; $('submit').disabled = true;
+        updateGameActions(); updateFinishAction(); celebrate(); startAutoAdvance(); $('skip').focus();
       } else {
         wrong++; feedbackKey = 'tryAgain'; feedbackKind = 'error'; showFeedback(t(feedbackKey),feedbackKind);
         encourage(); $('answer').focus(); $('answer').select();
@@ -632,11 +761,16 @@
     });
     // Skip is never a try; after a correct answer, the same button acts as Next.
     $('skip').addEventListener('click',advanceQuestion);
-    // Pause game time when the phone locks or the browser goes into the background.
+    // Pausing the Home Screen app must also pause the three-second countdown.
     document.addEventListener('visibilitychange', () => {
       if ($('game').hidden) return;
       if (document.hidden) {
         if (pausedAt === null) pausedAt = performance.now();
+        if (nextDeadline !== null && nextPausedAt === null) {
+          nextPausedAt = performance.now();
+          if (nextFrame !== null) cancelAnimationFrame(nextFrame);
+          nextFrame = null;
+        }
       } else if (pausedAt !== null) {
         const pause = performance.now() - pausedAt;
         started += pause;
@@ -645,6 +779,11 @@
           current.attemptStartedAt += pause;
         }
         pausedAt = null;
+        if (nextDeadline !== null && nextPausedAt !== null) {
+          nextDeadline += performance.now() - nextPausedAt;
+          nextPausedAt = null;
+          tickAutoAdvance();
+        }
         updateTimer();
       }
     });
@@ -675,15 +814,32 @@
         content.append(equation,attempts,duration); item.append(number,content,status); list.appendChild(item);
       }
     }
-    // End the game, save it for this player, and show its results.
-    $('finish').addEventListener('click',() => {
+    // An unfinished question is discarded when finishing; only explicit Skip counts.
+    // A game is saved only after at least one solved or skipped question.
+    function finishGame() {
+      stopAutoAdvance(); clearInterval(ticker);
+      clearTimeout(incorrectFlashTimer); clearTimeout(celebrationTimer);
+      $('question').classList.remove('incorrect','wiggle');
+      $('celebration').replaceChildren();
       const elapsedMs = (pausedAt ?? performance.now()) - started;
-      archiveCurrent(); clearInterval(ticker);
+      current = null;
       const correct = questions.filter(q => !q.skipped).length;
-      lastSession = {date:new Date().toISOString(),elapsedMs,correct,wrong,questions};
-      activeProfile().sessions.push(lastSession); save(); updateChooser();
+      const savedWrong = questions.reduce((total,q) => total + q.attempts.filter(a => !a.correct).length, 0);
+      lastSession = {date:new Date().toISOString(),elapsedMs,correct,wrong:savedWrong,questions};
+      if (questions.length > 0) { activeProfile().sessions.push(lastSession); save(); updateChooser(); }
       renderResults(lastSession);
       show('results'); $('results-title').focus();
+    }
+    // An empty or only-attempted first question goes straight back to My page.
+    // Do not save a session, or show an empty results screen.
+    $('finish').addEventListener('click', () => {
+      if (questions.length > 0) { finishGame(); return; }
+      stopAutoAdvance(); clearInterval(ticker);
+      clearTimeout(incorrectFlashTimer); clearTimeout(celebrationTimer);
+      $('question').classList.remove('incorrect','wiggle');
+      $('celebration').replaceChildren();
+      current = null;
+      openDashboard(selected);
     });
     // The new-player form is available from the player choice screen.
     $('create-profile').addEventListener('submit', createProfile);
