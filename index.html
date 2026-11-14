@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f7f5ff">
   <meta name="format-detection" content="telephone=no">
-  <title>Träna gångertabellen</title>
+  <title>Matte kul!</title>
   <!-- Use this picture for the iPhone Home Screen icon and browser tab. -->
   <link rel="apple-touch-icon" sizes="512x512" href="./gangertabellen-icon.png">
   <link rel="icon" type="image/png" href="./gangertabellen-icon.png">
@@ -56,9 +56,8 @@
     .create-error:empty{display:none}
     select{display:block;width:100%;min-height:50px;border:2px solid #bdc7d6;border-radius:12px;background:white;color:#1e293b;padding:8px 12px;font:inherit;font-size:16px}
     select:focus{outline:3px solid #ede9fe;border-color:#6d28d9}
-    .small-heading{font-weight:750;color:#51467d;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+    .small-heading{font-weight:750;color:#51467d;font-size:13px;letter-spacing:.04em}
     .question{width:100%;padding:24px 12px;text-align:center;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:18px;margin-bottom:20px}
-    .question small{display:block;color:#6d28d9;font-weight:750;font-size:14px}
     .expression{color:#312e81;font-size:clamp(37px,10vw,60px);font-weight:800;letter-spacing:-.055em;font-variant-numeric:tabular-nums;line-height:1.2;margin:6px 0 0;overflow-wrap:anywhere}
     label{display:block;font-weight:750;margin-bottom:8px}
     input{display:block;width:100%;max-width:100%;min-width:0;height:54px;border:2px solid #bdc7d6;border-radius:12px;background:#fff;color:#1e293b;padding:0 16px;font:inherit;font-size:20px;outline:none;-webkit-appearance:none;appearance:none}
@@ -66,6 +65,8 @@
     input:focus{border-color:#6d28d9;box-shadow:0 0 0 3px #ede9fe}
     input:disabled{background:#f1f5f9;color:#475569}
     .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    #answer-form .actions.is-solved{grid-template-columns:minmax(0,1fr);justify-items:center}
+    #answer-form .actions.is-solved #skip{max-width:240px}
     button{width:100%;min-width:0;min-height:52px;padding:10px 12px;border-radius:12px;font:inherit;font-weight:750;line-height:1.3;white-space:normal;overflow-wrap:anywhere;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color .15s,transform .15s}
     button:hover:not(:disabled){transform:translateY(-2px)}
     button:focus-visible{outline:3px solid #a78bfa;outline-offset:2px}
@@ -87,10 +88,17 @@
     .footer{margin:18px 0 0;text-align:center;color:#526277;font-size:13px;line-height:1.4}
     .stat span{display:block;font-size:13px;line-height:1.3;color:#493773;font-weight:700}
     .stat strong{display:block;font-size:clamp(20px,5vw,27px);margin-top:5px;color:#312e81;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    #result-stats .stat:first-child{grid-column:1/-1}
     .history{list-style:none;padding:0;margin:0 0 16px;max-height:min(300px,45dvh);overflow:auto;-webkit-overflow-scrolling:touch}
-    .history li{border-bottom:1px solid #e2e8f0;padding:10px 0;overflow-wrap:anywhere}
-    .history li:last-child{border-bottom:none}
-    .history small{display:block;color:#475569;line-height:1.55;margin-top:2px}
+    /* Separate the question number, equation, and outcome for easy scanning. */
+    .history-item{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;margin:0 0 8px;padding:12px;border:1px solid #e9e5f6;border-radius:12px;background:#fbfaff}
+    .history-item:last-child{margin-bottom:0}
+    .history-number{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:#ede9fe;color:#51467d;font-weight:750;font-variant-numeric:tabular-nums}
+    .history-content{min-width:0}
+    .history-expression{display:block;font-size:20px;line-height:1.3;color:#312e81;overflow-wrap:anywhere}
+    .history small{display:block;color:#475569;line-height:1.5;margin-top:3px}
+    .history-status{font-size:21px;line-height:1.2;text-align:right}
+    .history-status.is-skipped{font-size:13px;font-weight:750;color:#51467d;max-width:86px}
     .empty{color:#526277}
     .session{border:1px solid #ddd6fe;background:#fbfaff;border-radius:12px;margin:8px 0;overflow:hidden}
     .session summary{padding:12px;cursor:pointer;font-weight:750;line-height:1.4}
@@ -107,7 +115,7 @@
     [hidden]{display:none!important}
     /* Keep content inside the screen on a phone. Leave room for Safari bars. */
     @media(max-width:600px){main{align-items:start}.card{padding:clamp(18px,5vw,28px);border-radius:22px}h1{font-size:clamp(28px,7vw,34px)}.topbar{margin-bottom:16px}.question{padding:20px 10px;margin-bottom:18px}.profile-card{padding:12px}.profile-card strong{font-size:18px}.animal{font-size:42px}.sub{margin-bottom:18px}}
-    @media(max-width:390px){.actions,.profile-grid{grid-template-columns:minmax(0,1fr)}.emoji-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.profile-card{padding:12px}.profile-card .animal{display:inline-block;margin:0 8px 0 0;font-size:33px;vertical-align:middle}.profile-card strong{display:inline-block;vertical-align:middle}.profile-card .count{margin:3px 0 10px}}
+    @media(max-width:390px){.actions,.profile-grid{grid-template-columns:minmax(0,1fr)}#answer-form .actions{grid-template-columns:repeat(2,minmax(0,1fr))}.emoji-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.profile-card{padding:12px}.profile-card .animal{display:inline-block;margin:0 8px 0 0;font-size:33px;vertical-align:middle}.profile-card strong{display:inline-block;vertical-align:middle}.profile-card .count{margin:3px 0 10px}}
     @media(max-height:620px){main{align-items:start}.question{padding:15px 10px;margin-bottom:15px}.card{padding-top:20px;padding-bottom:20px}}
     @media(max-width:700px) and (orientation:landscape){main{align-items:start}.card{margin-inline:auto}}
     /* Limit motion for a person who selects reduced motion on the device. */
@@ -115,10 +123,10 @@
   </style>
 </head>
 <body>
-  <main><section class="card" aria-labelledby="title">
+  <main><div class="card">
     <!-- Change language here. This also changes the text in saved results. -->
     <div class="language-row"><span id="language-label">Språk:</span><div class="language-switch" role="group" aria-labelledby="language-label"><button type="button" id="lang-sv" lang="sv" aria-pressed="true">SV</button><button type="button" id="lang-en" lang="en" aria-pressed="false">EN</button></div></div>
-    <h1 id="title" data-i18n="title">Träna gångertabellen</h1>
+    <h1 id="title" data-i18n="title">Matte kul!</h1>
     <p class="sub" id="intro" data-i18n="intro">Välj vem som ska spela!</p>
     <div id="storage-warning" class="feedback notice" role="status" hidden data-i18n="storageWarning">Det går inte att spara här just nu. Resultaten finns bara tills du stänger sidan.</div>
     <!-- First screen: create or choose a personal profile. -->
@@ -153,7 +161,6 @@
     <!-- Player screen: show saved games and the clear button. -->
     <section id="dashboard" aria-label="Spelarens sida" data-i18n-aria="dashboardLabel" hidden>
       <div class="topbar"><span class="pill" id="profile-name"></span><button class="secondary tiny-button" id="switch-profile" type="button" data-i18n="switchProfile">Byt spelare</button></div>
-      <h2 data-i18n="yourPage">Din sida</h2>
       <p class="sub" data-i18n="yourGamesInfo">Här finns dina spel och dina resultat.</p>
       <button class="primary" type="button" id="start" data-i18n="playNow">Spela nu</button>
       <h3 data-i18n="pastGames">Tidigare spel</h3>
@@ -168,15 +175,16 @@
       <div class="topbar"><span class="pill" id="tally">⭐ Klara: 0</span><span class="pill clock" id="timer" role="timer" aria-label="Tid på uppgiften" data-i18n-aria="timerLabel">⏱ 0:00</span></div>
       <p class="small-heading" id="playing-as"></p>
       <p class="sub" data-i18n="gameInfo">Räkna ut talet. Du får prova igen om det blir fel!</p>
-      <div class="question" id="question" aria-label="Uppgift" data-i18n-aria="questionLabel"><small data-i18n="whatIs">Vad blir det?</small><p class="expression" id="expression">—</p></div>
+      <div class="question" id="question" aria-label="Uppgift" data-i18n-aria="questionLabel"><p class="expression" id="expression">—</p></div>
       <form id="answer-form" novalidate>
         <label for="answer" data-i18n="yourAnswer">Ditt svar</label>
         <input id="answer" name="answer" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" spellcheck="false" placeholder="Skriv ett tal" data-i18n-placeholder="answerPlaceholder" aria-describedby="feedback">
-        <div class="actions"><button class="primary" id="submit" type="submit" data-i18n="submit">Svara</button><button class="secondary" id="generate" type="button" data-i18n="newQuestion">Ny uppgift</button></div>
+         <!-- After a correct answer, show only a centered Next button. -->
+        <div class="actions" id="answer-actions"><button class="secondary" id="skip" type="button" data-i18n="skip">Hoppa över</button><button class="primary" id="submit" type="submit" data-i18n="submit">Svar</button></div>
       </form>
       <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
       <button class="finish" id="finish" type="button" data-i18n="finish">Klar! Se mina resultat</button>
-      <p class="footer" data-i18n="finishInfo">Ny uppgift när du vill. Tryck på ”Klar” för att spara spelet.</p>
+      <p class="footer" data-i18n="finishInfo">Tryck på ”Klar” för att spara spelet.</p>
     </section>
     <!-- End screen: show the results from this game. -->
     <section id="results" aria-label="Resultat från spelet" data-i18n-aria="resultsLabel" hidden>
@@ -190,7 +198,7 @@
     </section>
     <!-- JavaScript puts confetti here. Screen readers can ignore it. -->
     <div id="confetti" aria-hidden="true"></div>
-  </section></main>
+  </div></main>
   <script>
   (() => {
     'use strict';
@@ -200,7 +208,7 @@
     // Keep UI words separate from game data. Change language without changing saved scores.
     const text = {
       sv: {
-        title:'Träna gångertabellen', intro:'Välj vem som ska spela!',
+        title:'Matte kul!', languageLabel:'Språk:', intro:'Välj vem som ska spela!',
         storageWarning:'Det går inte att spara här just nu. Resultaten finns bara tills du stänger sidan.',
         chooseLabel:'Välj spelare', lion:'Lejonet', bear:'Björnen',
         saveInfo:'Dina spel sparas i den här webbläsaren när du trycker på ”Klar”.',
@@ -208,15 +216,15 @@
         yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', pastGames:'Tidigare spel',
         noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
         gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
-        gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift', whatIs:'Vad blir det?',
-        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', submit:'Svara', newQuestion:'Ny uppgift',
-        finish:'Klar! Se mina resultat', finishInfo:'Ny uppgift när du vill. Tryck på ”Klar” för att spara spelet.',
+        gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift',
+        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', submit:'Svar', skip:'Hoppa över', next:'Nästa',
+        finish:'Klar! Se mina resultat', finishInfo:'Tryck på ”Klar” för att spara spelet.',
         resultsLabel:'Resultat från spelet', greatJob:'Bra jobbat! 🎉', resultsIntro:'Här är dina resultat,',
-        yourQuestions:'Dina uppgifter', noAnswers:'Du har inte svarat på någon uppgift än.',
-        playAgain:'Spela igen', myPage:'Min sida', game:'spel', games:'spel', correct:'rätt', wrong:'fel',
-        correctAnswers:'Rätta svar', wrongAttempts:'Fel försök', totalTime:'Tid totalt',
-        avgTime:'Tid per klar uppgift (snitt)', avgShort:'Snitt', skipped:'hoppade vidare',
-        done:'klart!', attempts:'Försök', enterNumber:'Skriv ett tal först. Du kan det här! ✨',
+        yourQuestions:'Dina uppgifter', noAnswers:'Inga uppgifter att visa än.',
+        playAgain:'Spela igen', myPage:'Min sida', game:'spel', games:'spel', gamesStat:'Spel', correct:'rätt', wrong:'fel',
+        correctAnswers:'Rätta svar', wrongAttempts:'Felaktiga försök', totalTime:'Tid totalt',
+        avgTime:'Snittid per löst tal', avgShort:'Snitt', skipped:'Hoppat över',
+        attempts:'Försök', enterNumber:'Skriv ett tal först. Du kan det här! ✨',
         success:'Jaa! Rätt svar! 🎉 Bra jobbat!', tryAgain:'Nästan! 🌟 Prova igen, du klarar det!',
         noProfiles:'Inga spelare än. Gör en profil för att börja!', profileLimit:'Du kan ha högst 4 profiler.',
         addProfile:'Lägg till spelare', profileName:'Namn', namePlaceholder:'Skriv ditt namn', nameHelp:'Använd bara bokstäver och mellanslag.', nameLetters:'Använd bara bokstäver och mellanslag.', chooseEmoji:'Välj en emoji', profilePreview:'Så här blir din profil', previewName:'Ditt namn',
@@ -228,23 +236,23 @@
         deleteConfirm:name => `Ta bort profilen ${name} och alla dess spel? Det går inte att ångra.`
       },
       en: {
-        title:'Times table fun', intro:'Choose who will play!',
+        title:'Maths fun!', languageLabel:'Language:', intro:'Choose who will play!',
         storageWarning:'Saving does not work here right now. Results will be lost when you close this page.',
         chooseLabel:'Choose a player', lion:'Lion', bear:'Bear',
         saveInfo:'Your games are saved in this browser when you tap “Finish”.',
         dashboardLabel:'Player page', switchProfile:'Change player', yourPage:'Your page',
         yourGamesInfo:'See your games and scores here.', playNow:'Play now', pastGames:'Past games',
         noGames:'No games yet. Try one!', clearStats:'Delete all my results',
-        gameLabel:'Game', timerLabel:'Time on this question', tally:'Done', playing:'is playing',
-        gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question', whatIs:'What is it?',
-        yourAnswer:'Your answer', answerPlaceholder:'Type a number', submit:'Check answer', newQuestion:'New question',
-        finish:'Finish! See my results', finishInfo:'Want a new question? Tap “Finish” to save your game.',
+        gameLabel:'Game', timerLabel:'Time on this question', tally:'Solved', playing:'is playing',
+        gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question',
+        yourAnswer:'Your answer', answerPlaceholder:'Type a number', submit:'Answer', skip:'Skip', next:'Next',
+        finish:'Finish! See my results', finishInfo:'Tap “Finish” to save your game.',
         resultsLabel:'Game results', greatJob:'Great job! 🎉', resultsIntro:'Here are your results,',
-        yourQuestions:'Your questions', noAnswers:'You have not answered a question yet.',
-        playAgain:'Play again', myPage:'My page', game:'game', games:'games', correct:'right', wrong:'wrong',
-        correctAnswers:'Right answers', wrongAttempts:'Wrong tries', totalTime:'Total time',
-        avgTime:'Time per finished question (average)', avgShort:'Average', skipped:'moved on',
-        done:'done!', attempts:'Tries', enterNumber:'Type a number first. You can do it! ✨',
+        yourQuestions:'Your questions', noAnswers:'No questions to show yet.',
+        playAgain:'Play again', myPage:'My page', game:'game', games:'games', gamesStat:'Games', correct:'right', wrong:'wrong',
+        correctAnswers:'Correct answers', wrongAttempts:'Incorrect attempts', totalTime:'Total time',
+        avgTime:'Average time per solved question', avgShort:'Average', skipped:'Skipped',
+        attempts:'Tries', enterNumber:'Type a number first. You can do it! ✨',
         success:'Yes! That is right! 🎉 Great job!', tryAgain:'Almost! 🌟 Try again. You can do it!',
         noProfiles:'No players yet. Make a profile to start!', profileLimit:'You can have up to 4 profiles.',
         addProfile:'Add player', profileName:'Name', namePlaceholder:'Type your name', nameHelp:'Use letters and spaces only.', nameLetters:'Use letters and spaces only.', chooseEmoji:'Choose an emoji', profilePreview:'Your new profile', previewName:'Your name',
@@ -271,12 +279,14 @@
     function applyLanguage() {
       document.documentElement.lang = language;
       document.title = t('title');
-      for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
+       for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
+      updatePageTitle();
       for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
       for (const node of document.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = t(node.dataset.i18nPlaceholder);
       $('language-label').textContent = language === 'sv' ? 'Språk:' : 'Language:';
       $('lang-sv').setAttribute('aria-pressed', String(language === 'sv'));
       $('lang-en').setAttribute('aria-pressed', String(language === 'en'));
+      updateGameActions();
       updateChooser();
       renderEmojiPicker();
       renderImportOptions();
@@ -302,10 +312,19 @@
     let current = null, questions = [], wrong = 0, started = 0, ticker = null, pausedAt = null;
     let lastSession = null, feedbackKey = null, feedbackKind = null;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    // Use a different title on the player chooser and dashboard. The game and results
+    // already have their own context, so a second large heading would be distracting.
+    function updatePageTitle() {
+      const onDashboard = !$('dashboard').hidden;
+      const visible = !$('choose').hidden || onDashboard;
+      $('title').hidden = !visible;
+      if (visible) $('title').textContent = t(onDashboard ? 'yourPage' : 'title');
+    }
     // Show one screen. Hide the other screens.
     function show(screen) {
       for (const id of screens) $(id).hidden = id !== screen;
       $('intro').hidden = screen !== 'choose';
+      updatePageTitle();
     }
     // Accept only well-formed past games. This also checks old Lion and Bear games.
     function validSession(session) {
@@ -363,8 +382,9 @@
       const total = Math.floor(ms / 1000);
       return `${Math.floor(total / 60)}:${String(total % 60).padStart(2,'0')}`;
     }
-    // Show a short time for one answer attempt (for example, 2,5 s).
+    // Display only each question's total time; keep individual attempt timings in storage.
     function seconds(ms) { return `${(ms / 1000).toFixed(1).replace('.',language === 'sv' ? ',' : '.')} s`; }
+    function questionTime(ms) { return ms < 60000 ? seconds(ms) : time(ms); }
     // Draw the player list. The create form is hidden at the four-profile limit.
     function updateChooser() {
       const list = $('profile-list'); list.replaceChildren();
@@ -472,7 +492,7 @@
       const mistakes = sessions.reduce((sum, s) => sum + s.wrong, 0);
       const total = sessions.reduce((sum, s) => sum + s.elapsedMs, 0);
       const solvedDuration = sessions.reduce((sum, s) => sum + s.questions.filter(q => !q.skipped).reduce((n, q) => n + q.duration, 0), 0);
-      makeStats($('all-stats'), [[t('games'),String(sessions.length)],[t('correctAnswers'),String(correct)],[t('wrongAttempts'),String(mistakes)],[t('totalTime'),time(total)],[t('avgTime'),correct ? time(solvedDuration / correct) : '–']]);
+      makeStats($('all-stats'), [[t('gamesStat'),String(sessions.length)],[t('correctAnswers'),String(correct)],[t('wrongAttempts'),String(mistakes)],[t('totalTime'),time(total)],[t('avgTime'),correct ? time(solvedDuration / correct) : '–']]);
       $('no-sessions').hidden = sessions.length !== 0;
       const list = $('session-list'); list.replaceChildren();
       for (const session of [...sessions].reverse()) {
@@ -488,7 +508,9 @@
           const ul = document.createElement('ul');
           for (const q of session.questions) {
             const li = document.createElement('li');
-            li.textContent = `${q.a} × ${q.b}: ${t(q.skipped ? 'skipped' : 'correct')} · ${time(q.duration)} · ${q.attempts.map(a => `${t(a.correct ? 'correct' : 'wrong')} ${seconds(a.ms)}`).join(', ')}`;
+             // Historical data remains detailed; the player sees only the total question time.
+             const equation = `${q.a} × ${q.b}${q.skipped ? '' : ` = ${q.a * q.b}`}`;
+            li.textContent = `${equation} · ${q.skipped ? t('skipped') : '✅'} · ${questionTime(q.duration)}`;
             ul.appendChild(li);
           }
           body.appendChild(ul);
@@ -510,25 +532,44 @@
     function updateTimer() {
       if (current && current.solvedAt === null && !document.hidden && !$('game').hidden) $('timer').textContent = '⏱ ' + time(performance.now() - current.startedAt);
     }
-    // Keep an unfinished question only if the player tried an answer.
-    function archiveCurrent() {
-      if (current && current.solvedAt === null && current.attempts.length > 0) {
+    // Record a skipped question even with zero tries when Skip is pressed.
+    // When finishing the game, an untouched question is still omitted, as before.
+    function archiveCurrent(includeUnattempted = false) {
+      if (current && current.solvedAt === null && (includeUnattempted || current.attempts.length > 0)) {
         current.duration = performance.now() - current.startedAt;
         current.skipped = true;
         questions.push(current);
       }
       current = null;
     }
-    // Set up a new question. A player can do this at any time.
+
+    // The active question has two actions; a solved one has a single, centered Next.
+    // Refresh this state after language switching as well as after answering.
+    function updateGameActions() {
+      const solved = current !== null && current.solvedAt !== null;
+      $('submit').hidden = solved;
+      $('answer-actions').classList.toggle('is-solved', solved);
+      $('skip').classList.toggle('primary', solved);
+      $('skip').classList.toggle('secondary', !solved);
+      $('skip').textContent = t(solved ? 'next' : 'skip');
+    }
+
+    // Set up a new question without automatically archiving the previous one.
     function newQuestion() {
-      archiveCurrent();
       const i = randomPairIndex(), a = Math.floor(i / 10) + 1, b = i % 10 + 1;
       const now = performance.now();
       current = { a,b,product:a*b,startedAt:now,attemptStartedAt:now,solvedAt:null,duration:0,attempts:[],skipped:false };
       $('expression').textContent = `${a} × ${b} = ?`;
       $('answer').value = ''; $('answer').disabled = false; $('submit').disabled = false;
+      updateGameActions();
       $('timer').textContent = '⏱ 0:00'; feedbackKey = null; feedbackKind = null; showFeedback('',''); $('answer').focus();
     }
+    function advanceQuestion() {
+      // An already-solved question is saved, so Next must not archive it again.
+      if (current && current.solvedAt === null) archiveCurrent(true);
+      newQuestion();
+    }
+
     // Start a new game. Past games stay in browser storage.
     function startGame() {
       questions = []; wrong = 0; current = null; lastSession = null; started = performance.now(); pausedAt = null;
@@ -583,14 +624,14 @@
         $('tally').textContent = `⭐ ${t('tally')}: ${questions.filter(q => !q.skipped).length}`;
         $('timer').textContent = '⏱ ' + time(current.duration);
         feedbackKey = 'success'; feedbackKind = 'success'; showFeedback(t(feedbackKey),feedbackKind);
-        $('answer').disabled = true; $('submit').disabled = true; celebrate(); $('generate').focus();
+        $('answer').disabled = true; $('submit').disabled = true; updateGameActions(); celebrate(); $('skip').focus();
       } else {
         wrong++; feedbackKey = 'tryAgain'; feedbackKind = 'error'; showFeedback(t(feedbackKey),feedbackKind);
         encourage(); $('answer').focus(); $('answer').select();
       }
     });
-    // The player can leave a question and get a new one.
-    $('generate').addEventListener('click',newQuestion);
+    // Skip is never a try; after a correct answer, the same button acts as Next.
+    $('skip').addEventListener('click',advanceQuestion);
     // Pause game time when the phone locks or the browser goes into the background.
     document.addEventListener('visibilitychange', () => {
       if ($('game').hidden) return;
@@ -612,17 +653,26 @@
       const {elapsedMs,correct,wrong,questions: played} = session;
       makeStats($('result-stats'),[
         [t('totalTime'),time(elapsedMs)],
-        [t('avgTime'),correct ? time(played.filter(q => !q.skipped).reduce((sum,q) => sum+q.duration,0)/correct) : '–'],
         [t('correctAnswers'),String(correct)],[t('wrongAttempts'),String(wrong)]
       ]);
       $('results-name').textContent = profileName();
       const list = $('history'); list.replaceChildren();
       $('empty-history').hidden = played.length !== 0;
       for (const [i,q] of played.entries()) {
-        const item = document.createElement('li'), title = document.createElement('strong'), detail = document.createElement('small');
-        title.textContent = `${i+1}. ${q.a} × ${q.b} – ${t(q.skipped ? 'skipped' : 'done')} (${time(q.duration)})`;
-        detail.textContent = `${t('attempts')}: ${q.attempts.map(a => `${t(a.correct ? 'correct' : 'wrong')} ${seconds(a.ms)}`).join(' · ')}`;
-        item.append(title,detail); list.appendChild(item);
+        const item = document.createElement('li'); item.className = 'history-item';
+        const number = document.createElement('span'); number.className = 'history-number';
+        number.textContent = String(i + 1);
+        const content = document.createElement('div'); content.className = 'history-content';
+        const equation = document.createElement('strong'); equation.className = 'history-expression';
+        equation.textContent = `${q.a} × ${q.b}${q.skipped ? '' : ` = ${q.a * q.b}`}`;
+        const attempts = document.createElement('small'); attempts.textContent = `${t('attempts')}: ${q.attempts.length}`;
+        // Only the full question duration is shown; individual attempt timings remain saved.
+        const duration = document.createElement('small'); duration.textContent = `${t('totalTime')}: ${questionTime(q.duration)}`;
+        const status = document.createElement('span');
+        status.className = 'history-status' + (q.skipped ? ' is-skipped' : '');
+        status.textContent = q.skipped ? t('skipped') : '✅';
+        status.setAttribute('aria-label', q.skipped ? t('skipped') : t('correct'));
+        content.append(equation,attempts,duration); item.append(number,content,status); list.appendChild(item);
       }
     }
     // End the game, save it for this player, and show its results.
