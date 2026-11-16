@@ -73,6 +73,40 @@
     input:focus{border-color:#6d28d9;box-shadow:0 0 0 3px #ede9fe}
     input:disabled{background:#f1f5f9;color:#475569}
     .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    /* Touch devices show an in-app keypad instead of opening the OS keyboard.
+       The original input stays as the single source of answer data and desktop input. */
+    .answer-display{display:flex;align-items:center;justify-content:center;min-height:54px;border:2px solid #bdc7d6;border-radius:12px;background:white;color:#1e293b;font-size:27px;font-weight:750;font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none;pointer-events:none}
+    .answer-display.is-placeholder{color:#64748b;font-size:19px;font-weight:400}
+    .number-keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:9px auto 0;max-width:340px}
+    .number-keypad button{min-height:49px;padding:4px;border:1px solid #d4c8ed;border-radius:12px;background:#f5f3ff;color:#312e81;font-size:25px;font-weight:750;font-variant-numeric:tabular-nums}
+    .number-keypad button:active{background:#ddd6fe;transform:none}
+    .number-keypad .keypad-edit{background:#fff;color:#5b21b6;font-size:22px}
+    .keypad-mode #answer-form > label{display:none}
+    .keypad-mode #game-info{display:none}
+    .keypad-mode #finish-info{display:none}
+    .keypad-mode .game-header{position:sticky;top:0;z-index:3;background:#fff;padding-bottom:2px}
+    .keypad-mode #game .topbar{margin-bottom:7px}
+    .keypad-mode #playing-as{margin:0 0 7px;font-size:13px;line-height:1.35}
+    .keypad-mode #question{padding:13px 10px;margin-bottom:11px}
+    .keypad-mode #answer-form .actions{margin-top:9px}
+    .keypad-mode #game .feedback{margin-top:9px;padding:9px 10px}
+    .keypad-mode #finish{margin-top:9px}
+    /* On short phone screens, favor the question and keypad over decorative whitespace.
+       The game header remains visible when scrolling is still necessary. */
+    @media(max-height:700px){
+      .keypad-mode.playing-game main{padding:6px 10px}
+      .keypad-mode.playing-game .card{padding:11px 14px}
+      .keypad-mode.playing-game .language-row{margin:0 0 7px}
+      .keypad-mode.playing-game #question{padding:9px 8px;margin-bottom:8px}
+      .keypad-mode.playing-game .expression{font-size:clamp(34px,9vw,47px)}
+      .keypad-mode.playing-game .answer-display{min-height:44px}
+      .keypad-mode.playing-game .number-keypad{gap:5px;margin-top:7px}
+      .keypad-mode.playing-game .number-keypad button{min-height:40px;font-size:23px}
+      .keypad-mode.playing-game #answer-form .actions{margin-top:7px}
+      .keypad-mode.playing-game #answer-form .actions button{min-height:43px}
+      .keypad-mode.playing-game #finish{min-height:43px;margin-top:7px}
+      .keypad-mode.playing-game #game .feedback{font-size:14px;padding:7px 9px;margin-top:7px}
+    }
     #answer-form .actions.is-solved{grid-template-columns:minmax(0,1fr);justify-items:center}
     #answer-form .actions.is-solved #skip{max-width:240px}
     /* The lighter fill tracks the three-second Next countdown, left to right. */
@@ -205,14 +239,26 @@
     </section>
     <!-- Game screen: show the question, answer box, clock, and buttons. -->
     <section id="game" aria-label="Spel" data-i18n-aria="gameLabel" hidden>
-      <div class="topbar"><span class="pill" id="tally">⭐ Klara: 0</span><span class="pill clock" id="timer" role="timer" aria-label="Tid på uppgiften" data-i18n-aria="timerLabel">⏱ 0:00</span></div>
-      <p class="small-heading" id="playing-as"></p>
-      <p class="sub" data-i18n="gameInfo">Räkna ut talet. Du får prova igen om det blir fel!</p>
+      <div class="game-header">
+        <div class="topbar"><span class="pill" id="tally">⭐ Klara: 0</span><span class="pill clock" id="timer" role="timer" aria-label="Tid på uppgiften" data-i18n-aria="timerLabel">⏱ 0:00</span></div>
+        <p class="small-heading" id="playing-as"></p>
+      </div>
+      <p class="sub" id="game-info" data-i18n="gameInfo">Räkna ut talet. Du får prova igen om det blir fel!</p>
       <div class="question" id="question" aria-label="Uppgift" data-i18n-aria="questionLabel"><p class="expression" id="expression">—</p><div id="celebration" aria-hidden="true"></div></div>
       <form id="answer-form" novalidate>
         <label for="answer" data-i18n="yourAnswer">Ditt svar</label>
         <input id="answer" name="answer" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" spellcheck="false" placeholder="Skriv ett tal" data-i18n-placeholder="answerPlaceholder" aria-describedby="feedback">
-         <!-- After a correct answer, show only a centered Next button. -->
+        <!-- Read-only display and number buttons replace the OS keyboard on touch devices. -->
+        <output id="answer-display" class="answer-display" aria-live="polite" aria-atomic="true" hidden></output>
+        <div id="number-keypad" class="number-keypad" role="group" aria-label="Sifferknappar" data-i18n-aria="keypadLabel" hidden>
+          <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+          <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+          <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+          <button type="button" class="keypad-edit" data-key="clear" aria-label="Rensa svaret" data-i18n-aria="clearAnswer">C</button>
+          <button type="button" data-key="0">0</button>
+          <button type="button" class="keypad-edit" data-key="backspace" aria-label="Ta bort sista siffran" data-i18n-aria="deleteDigit">⌫</button>
+        </div>
+        <!-- After a correct answer, show only a centered Next button. -->
         <div class="actions" id="answer-actions"><button class="secondary" id="skip" type="button"><span class="next-progress" id="next-progress" aria-hidden="true" hidden></span><span class="next-label" id="next-label">Hoppa över</span></button><button class="primary" id="submit" type="submit" data-i18n="submit">Svar</button></div>
       </form>
       <div id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -249,7 +295,7 @@
         noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
         gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
         gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift',
-        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', submit:'Svar', skip:'Hoppa över', next:'Nästa', seeResults:'Se resultat',
+        yourAnswer:'Ditt svar', answerPlaceholder:'Skriv ett tal', keypadLabel:'Sifferknappar', clearAnswer:'Rensa svaret', deleteDigit:'Ta bort sista siffran', submit:'Svar', skip:'Hoppa över', next:'Nästa', seeResults:'Se resultat',
         finish:'Klar! Se mina resultat', finishInfo:'Tryck på ”Klar” för att spara spelet.',
         resultsLabel:'Resultat från spelet', greatJob:'Bra jobbat! 🎉', resultsIntro:'Här är dina resultat,',
         yourQuestions:'Dina uppgifter', noAnswers:'Inga uppgifter att visa än.',
@@ -277,7 +323,7 @@
         noGames:'No games yet. Try one!', clearStats:'Delete all my results',
         gameLabel:'Game', timerLabel:'Time on this question', tally:'Solved', playing:'is playing',
         gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question',
-        yourAnswer:'Your answer', answerPlaceholder:'Type a number', submit:'Answer', skip:'Skip', next:'Next', seeResults:'See results',
+        yourAnswer:'Your answer', answerPlaceholder:'Type a number', keypadLabel:'Number keypad', clearAnswer:'Clear answer', deleteDigit:'Delete last digit', submit:'Answer', skip:'Skip', next:'Next', seeResults:'See results',
         finish:'Finish! See my results', finishInfo:'Tap “Finish” to save your game.',
         resultsLabel:'Game results', greatJob:'Great job! 🎉', resultsIntro:'Here are your results,',
         yourQuestions:'Your questions', noAnswers:'No questions to show yet.',
@@ -330,6 +376,7 @@
       $('lang-en').setAttribute('aria-pressed', String(language === 'en'));
       updateGameActions();
       updateFinishAction();
+      updateAnswerDisplay();
       updateLevelSelection();
       updateChooser();
       renderEmojiPicker();
@@ -355,6 +402,10 @@
     // These values describe the active player and the current game.
     let current = null, questions = [], wrong = 0, started = 0, ticker = null, pausedAt = null;
     let lastSession = null, feedbackKey = null, feedbackKind = null;
+    // Match the primary input device, not browser names. On hybrid devices, a
+    // physical keyboard can also enter digits while the touch keypad is shown.
+    const touchPointer = window.matchMedia('(pointer: coarse)');
+    let useKeypad = touchPointer.matches, replaceOnNextDigit = false;
     // Only solved facts leave the question pool. Skipped facts stay available.
     let solvedPairs = new Set(), lastPairIndex = null;
     const NEXT_DELAY_MS = 3000;
@@ -372,6 +423,7 @@
     function show(screen) {
       for (const id of screens) $(id).hidden = id !== screen;
       $('intro').hidden = screen !== 'choose';
+      document.body.classList.toggle('playing-game', screen === 'game');
       updatePageTitle();
     }
     // Check saved sessions before loading. Legacy sessions without `level` use basic.
@@ -601,6 +653,60 @@
       selected = id; selectedLevel = null;
       renderDashboard(); updateLevelSelection(); show('dashboard'); $('level-basic').focus();
     }
+    // The ordinary input remains the single answer value for both entry methods.
+    // Touch users see a non-editable output so Safari never has to open its keyboard.
+    function updateAnswerDisplay() {
+      const value = $('answer').value;
+      const display = $('answer-display');
+      display.textContent = value || t('answerPlaceholder');
+      display.classList.toggle('is-placeholder', !value);
+      display.setAttribute('aria-label', `${t('yourAnswer')}: ${value || t('answerPlaceholder')}`);
+    }
+    function updateKeypadVisibility() {
+      const solved = current !== null && current.solvedAt !== null;
+      $('number-keypad').hidden = !useKeypad || $('game').hidden || solved;
+    }
+    function setInputMode() {
+      useKeypad = touchPointer.matches;
+      document.body.classList.toggle('keypad-mode', useKeypad);
+      $('answer').hidden = useKeypad;
+      $('answer').readOnly = useKeypad;
+      $('answer').tabIndex = useKeypad ? -1 : 0;
+      $('answer-display').hidden = !useKeypad;
+      updateAnswerDisplay();
+      updateKeypadVisibility();
+    }
+    touchPointer.addEventListener('change', setInputMode);
+    // Pressing a new digit after a wrong answer replaces the old attempt, just
+    // as selecting the old value in the desktop input lets typing replace it.
+    function enterKeypadDigit(key) {
+      if (!useKeypad || $('game').hidden || !current || current.solvedAt !== null) return;
+      let value = $('answer').value;
+      if (key === 'clear') value = '';
+      else if (key === 'backspace') value = value.slice(0,-1);
+      else if (/^[0-9]$/.test(key)) value = (replaceOnNextDigit ? '' : value).concat(key).slice(0,3);
+      else return;
+      replaceOnNextDigit = false;
+      $('answer').value = value;
+      updateAnswerDisplay();
+    }
+    $('number-keypad').addEventListener('click', event => {
+      const button = event.target.closest('button[data-key]');
+      if (button) enterKeypadDigit(button.dataset.key);
+    });
+    // Optional hardware keyboard input on tablets remains usable, without
+    // making the hidden native field focusable or opening a software keyboard.
+    document.addEventListener('keydown', event => {
+      if (!useKeypad || $('game').hidden || event.altKey || event.ctrlKey || event.metaKey ||
+          event.target.closest('input, textarea, select')) return;
+      const key = event.key === 'Backspace' ? 'backspace' : event.key;
+      if (/^[0-9]$/.test(key) || key === 'backspace') {
+        event.preventDefault(); enterKeypadDigit(key);
+      } else if (key === 'Enter' && event.target === document.body && current && current.solvedAt === null) {
+        event.preventDefault(); $('answer-form').requestSubmit();
+      }
+    });
+    setInputMode();
     // Show a message below the answer box.
     function showFeedback(message,kind) {
       $('feedback').className = 'feedback' + (kind ? ' ' + kind : '');
@@ -626,6 +732,7 @@
       const solved = current !== null && current.solvedAt !== null;
       $('submit').hidden = solved;
       $('answer-actions').classList.toggle('is-solved', solved);
+      updateKeypadVisibility();
       $('skip').classList.toggle('primary', solved);
       $('skip').classList.toggle('secondary', !solved);
       $('next-progress').hidden = !solved;
@@ -683,9 +790,11 @@
       current = { a,b,product:a*b,startedAt:now,attemptStartedAt:now,solvedAt:null,duration:0,attempts:[],skipped:false };
       $('expression').textContent = `${a} × ${b} = ?`;
       $('answer').value = ''; $('answer').disabled = false; $('submit').disabled = false;
+      replaceOnNextDigit = false; updateAnswerDisplay();
       updateGameActions();
       updateFinishAction();
-      $('timer').textContent = '⏱ 0:00'; feedbackKey = null; feedbackKind = null; showFeedback('',''); $('answer').focus();
+      $('timer').textContent = '⏱ 0:00'; feedbackKey = null; feedbackKind = null; showFeedback('','');
+      if (!useKeypad) $('answer').focus();
     }
     function advanceQuestion() {
       stopAutoAdvance();
@@ -789,7 +898,7 @@
       event.preventDefault();
       if (!current || current.solvedAt !== null) return;
       const value = $('answer').value.trim();
-      if (!/^[0-9]+$/.test(value)) { feedbackKey = 'enterNumber'; feedbackKind = 'notice'; showFeedback(t(feedbackKey),feedbackKind); $('answer').focus(); return; }
+      if (!/^[0-9]+$/.test(value)) { feedbackKey = 'enterNumber'; feedbackKind = 'notice'; showFeedback(t(feedbackKey),feedbackKind); if (!useKeypad) $('answer').focus(); return; }
       const now = performance.now(), correct = Number(value) === current.product;
       current.attempts.push({correct, ms:now-current.attemptStartedAt});
       current.attemptStartedAt = now;
@@ -802,10 +911,12 @@
         $('timer').textContent = '⏱ ' + time(current.duration);
         feedbackKey = 'success'; feedbackKind = 'success'; showFeedback(t(feedbackKey),feedbackKind);
         $('answer').disabled = true; $('submit').disabled = true;
+        replaceOnNextDigit = false;
         updateGameActions(); updateFinishAction(); celebrate(); startAutoAdvance(); $('skip').focus();
       } else {
         wrong++; feedbackKey = 'tryAgain'; feedbackKind = 'error'; showFeedback(t(feedbackKey),feedbackKind);
-        encourage(); $('answer').focus(); $('answer').select();
+        encourage(); replaceOnNextDigit = useKeypad;
+        if (!useKeypad) { $('answer').focus(); $('answer').select(); }
       }
     });
     // Skip is never a try; after a correct answer, the same button acts as Next.
