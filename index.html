@@ -46,10 +46,9 @@
     .profile-card,.stat{min-width:0;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:15px;padding:15px}
     .profile-card{text-align:center}
     .animal{font-size:48px;line-height:1.2;display:block;margin-bottom:3px}
-    .profile-card strong{display:block;font-size:20px}
+    .profile-card strong{display:block;font-size:20px;overflow-wrap:anywhere}
     .profile-card span.count{display:block;color:#475569;font-size:14px;margin:5px 0 12px}
     .profile-card button{min-height:46px}
-    .profile-card strong{overflow-wrap:anywhere}
     /* Ordinary play has one unambiguous Choose button per profile.
        A separate edit mode turns these into Edit buttons only when requested. */
     .profile-card .profile-select{width:100%;padding:9px 7px}
@@ -65,7 +64,6 @@
     .level-option{min-height:80px;border:2px solid #ddd6fe;background:#fbfaff;color:#312e81;font-size:25px;font-variant-numeric:tabular-nums}
     .level-option[aria-pressed="true"]{border-color:#6d28d9;background:#ede9fe;box-shadow:inset 0 0 0 1px #6d28d9}
     .level-context{color:#51467d;font-size:14px;font-weight:750;margin:-9px 0 17px}
-    .profile-card .animal{font-size:48px}
     .create-box{border:1px solid #ddd6fe;background:#fbfaff;border-radius:16px;padding:18px;margin-top:16px}
     .create-box h2{margin-bottom:8px}
     .create-box label{margin-top:14px}
@@ -94,6 +92,8 @@
     input:focus{border-color:#6d28d9;box-shadow:0 0 0 3px #ede9fe}
     input:disabled{background:#f1f5f9;color:#475569}
     .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    /* The results screen has one clear, full-width return action. */
+    #results .actions{grid-template-columns:minmax(0,1fr)}
     /* Touch devices show an in-app keypad instead of opening the OS keyboard.
        The original input stays as the single source of answer data and desktop input. */
     .answer-display{display:flex;align-items:center;justify-content:center;min-height:54px;border:2px solid #bdc7d6;border-radius:12px;background:white;color:#1e293b;font-size:27px;font-weight:750;font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none;pointer-events:none}
@@ -327,7 +327,7 @@
       <h3 data-i18n="yourQuestions">Dina uppgifter</h3>
       <ul class="history" id="history"></ul>
       <p class="empty" id="empty-history" hidden data-i18n="noAnswers">Du har inte svarat på någon uppgift än.</p>
-      <div class="actions"><button class="primary" id="restart" type="button" data-i18n="playAgain">Spela igen</button><button class="secondary" id="back-to-profile" type="button" data-i18n="myPage">Min sida</button></div>
+      <div class="actions"><button class="primary" id="back-to-profile" type="button" data-i18n="myPage">Min sida</button></div>
     </section>
   </div></main>
   <script>
@@ -352,7 +352,7 @@
         finish:'Klar! Se mina resultat', finishInfo:'Tryck på ”Klar” för att spara spelet.',
         resultsLabel:'Resultat från spelet', greatJob:'Bra jobbat! 🎉', resultsIntro:'Här är dina resultat,',
         yourQuestions:'Dina uppgifter', noAnswers:'Inga uppgifter att visa än.',
-        playAgain:'Spela igen', myPage:'Min sida', game:'spel', games:'spel', gamesStat:'Spel', correct:'rätt', wrong:'fel',
+        myPage:'Min sida', game:'spel', games:'spel', gamesStat:'Spel', correct:'rätt', wrong:'fel',
         correctAnswers:'Rätta svar', wrongAttempts:'Felaktiga försök', point:'poäng', points:'poäng', totalTime:'Tid totalt',
         avgTime:'Snittid per löst tal', avgShort:'Snitt', skipped:'Hoppat över',
         attempts:'Försök', enterNumber:'Skriv ett tal först. Du kan det här! ✨',
@@ -380,7 +380,7 @@
         finish:'Finish! See my results', finishInfo:'Tap “Finish” to save your game.',
         resultsLabel:'Game results', greatJob:'Great job! 🎉', resultsIntro:'Here are your results,',
         yourQuestions:'Your questions', noAnswers:'No questions to show yet.',
-        playAgain:'Play again', myPage:'My page', game:'game', games:'games', gamesStat:'Games', correct:'right', wrong:'wrong',
+        myPage:'My page', game:'game', games:'games', gamesStat:'Games', correct:'right', wrong:'wrong',
         correctAnswers:'Correct answers', wrongAttempts:'Incorrect attempts', point:'point', points:'points', totalTime:'Total time',
         avgTime:'Average time per solved question', avgShort:'Average', skipped:'Skipped',
         attempts:'Tries', enterNumber:'Type a number first. You can do it! ✨',
@@ -413,6 +413,8 @@
     const oldStorageKey = 'gangertabellen-profiler-v1';
     const emojiChoices = ['🦁','🐻','🐱','🐶','🦊','🐼','🐸','🐵','🦄','🐯','🐨','🐧','🐙','🦋','🚀','⭐','🌈','⚽'];
     let profiles = [], oldGames = { lion:[], bear:[] }, selected = null, chosenEmoji = emojiChoices[0];
+    // Do not overwrite existing browser data if it could not be read safely.
+    let canSaveProfiles = false;
     let editMode = false, editingProfileId = null, editingEmoji = emojiChoices[0], editErrorKey = null;
     const activeProfile = () => profiles.find(p => p.id === selected);
     const profileName = () => { const p = activeProfile(); return p ? `${p.emoji} ${p.name}` : ''; };
@@ -457,7 +459,7 @@
     }
 
     // These values describe the active player and the current game.
-    let current = null, questions = [], wrong = 0, started = 0, ticker = null, pausedAt = null;
+    let current = null, questions = [], started = 0, ticker = null, pausedAt = null;
     let lastSession = null, feedbackKey = null, feedbackKind = null;
     // Match the primary input device, not browser names. On hybrid devices, a
     // physical keyboard can also enter digits while the touch keypad is shown.
@@ -509,26 +511,36 @@
         if (localStorage.getItem(probe) !== '1') throw new Error('Storage unavailable');
         localStorage.removeItem(probe);
         const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
-        if (Array.isArray(saved)) {
-          const seen = new Set();
-          profiles = saved.filter(p => {
-            if (!p || typeof p.id !== 'string' || p.id.length > 80 || seen.has(p.id) ||
-                typeof p.name !== 'string' || !p.name.trim() || p.name.length > 24 ||
-                typeof p.emoji !== 'string' || !emojiChoices.includes(p.emoji) ||
-                !Array.isArray(p.sessions)) return false;
-            seen.add(p.id);
-            p.sessions = p.sessions.filter(validSession);
-            return true;
-          }).slice(0,4);
-        }
-        const old = JSON.parse(localStorage.getItem(oldStorageKey) || '{}');
-        for (const key of ['lion','bear']) {
-          if (Array.isArray(old[key])) oldGames[key] = old[key].filter(validSession);
-        }
+        if (!Array.isArray(saved)) throw new Error('Invalid saved profiles');
+        const seen = new Set();
+        let rejectedData = saved.length > 4;
+        profiles = saved.filter(p => {
+          if (!p || typeof p.id !== 'string' || p.id.length > 80 || seen.has(p.id) ||
+              typeof p.name !== 'string' || !p.name.trim() || p.name.length > 24 ||
+              typeof p.emoji !== 'string' || !emojiChoices.includes(p.emoji) ||
+              !Array.isArray(p.sessions)) { rejectedData = true; return false; }
+          seen.add(p.id);
+          const valid = p.sessions.filter(validSession);
+          if (valid.length !== p.sessions.length) rejectedData = true;
+          p.sessions = valid;
+          return true;
+        }).slice(0,4);
+        // Filtering bad records may be useful for viewing surviving games, but
+        // saving the filtered list would permanently erase the original data.
+        canSaveProfiles = !rejectedData;
+        if (rejectedData) $('storage-warning').hidden = false;
+        // A damaged legacy import should not block saving valid current profiles.
+        try {
+          const old = JSON.parse(localStorage.getItem(oldStorageKey) || '{}');
+          for (const key of ['lion','bear']) {
+            if (Array.isArray(old[key])) oldGames[key] = old[key].filter(validSession);
+          }
+        } catch { /* Leave the old import data in storage untouched. */ }
       } catch { $('storage-warning').hidden = false; }
     }
     // Save the full profile list after creating, finishing, clearing, or deleting.
     function save() {
+      if (!canSaveProfiles) return;
       try { localStorage.setItem(storageKey, JSON.stringify(profiles)); }
       catch { $('storage-warning').hidden = false; }
     }
@@ -955,7 +967,7 @@
       updateLevelSelection();
       stopAutoAdvance();
       questions = []; solvedPairs = new Set(); lastPairIndex = null;
-      wrong = 0; current = null; lastSession = null; started = performance.now(); pausedAt = null;
+      current = null; lastSession = null; started = performance.now(); pausedAt = null;
       $('playing-as').textContent = `${profileName()} ${t('playing')} · ${levelLabel(gameLevel)}`;
       $('tally').textContent = `⭐ ${t('tally')}: 0`;
       show('game'); newQuestion(); clearInterval(ticker); ticker = setInterval(updateTimer,100);
@@ -1059,7 +1071,7 @@
         $('answer').disabled = true; $('submit').disabled = true;
         updateGameActions(); updateFinishAction(); celebrate(); startAutoAdvance(); $('skip').focus();
       } else {
-        wrong++; feedbackKey = 'tryAgain'; feedbackKind = 'error'; showFeedback(t(feedbackKey),feedbackKind);
+        feedbackKey = 'tryAgain'; feedbackKind = 'error'; showFeedback(t(feedbackKey),feedbackKind);
         // Keep the wrong attempt and its timing, but immediately clear the visible input.
         // The next number starts fresh on both the touchscreen keypad and desktop.
         $('answer').value = '';
@@ -1167,12 +1179,10 @@
     $('switch-profile').addEventListener('click',() => {
       editMode = false;
       selected = null; show('choose'); updateChooser();
-      if (profiles.length < 4) $('new-name').focus();
-      else $('profile-list').querySelector('button')?.focus();
+      $('profile-list').querySelector('button')?.focus();
     });
     $('start').addEventListener('click',startGame);
-    // Play again returns to level selection instead of silently reusing the last level.
-    $('restart').addEventListener('click',() => openDashboard(selected));
+    // Return to the player page, where a new level must be chosen.
     $('back-to-profile').addEventListener('click',() => openDashboard(selected));
     // Clearing game history keeps the player's name and emoji.
     $('clear-stats').addEventListener('click',() => {
