@@ -36,6 +36,11 @@
     .game-header .topbar{margin-bottom:12px}
     .pill{background:#f5f3ff;border:1px solid #ddd6fe;color:#4c1d95;border-radius:999px;padding:8px 12px;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
     .clock{background:#ecfeff;border-color:#a5f3fc;color:#155e75}
+    /* Saved lifetime points sit beside the player name, below “Your page”.
+       Wrap naturally on narrow screens without pushing the action off screen. */
+    .profile-identity{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+    .profile-identity .pill{min-width:0;overflow-wrap:anywhere}
+    .points-pill{background:#fffbeb;border-color:#fcd34d;color:#92400e;white-space:nowrap}
     /* Keep player cards and result cards in a clear two-column grid. */
     .profile-grid,.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
     .profile-card,.stat{min-width:0;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:15px;padding:15px}
@@ -262,7 +267,14 @@
     </section>
     <!-- Player screen: show saved games and the clear button. -->
     <section id="dashboard" aria-label="Spelarens sida" data-i18n-aria="dashboardLabel" hidden>
-      <div class="topbar"><span class="pill" id="profile-name"></span><button class="secondary tiny-button" id="switch-profile" type="button" data-i18n="switchProfile">Byt spelare</button></div>
+      <div class="topbar">
+        <div class="profile-identity">
+          <span class="pill" id="profile-name"></span>
+          <!-- Points come from saved correct answers, never a second counter. -->
+          <span class="pill points-pill" id="profile-points">⭐ 0 poäng</span>
+        </div>
+        <button class="secondary tiny-button" id="switch-profile" type="button" data-i18n="switchProfile">Byt spelare</button>
+      </div>
       <p class="sub" data-i18n="yourGamesInfo">Här finns dina spel och dina resultat.</p>
       <!-- No default: the player must actively choose a level for each game. -->
       <p class="level-heading" id="level-label" data-i18n="chooseLevel">Välj nivå</p>
@@ -341,7 +353,7 @@
         resultsLabel:'Resultat från spelet', greatJob:'Bra jobbat! 🎉', resultsIntro:'Här är dina resultat,',
         yourQuestions:'Dina uppgifter', noAnswers:'Inga uppgifter att visa än.',
         playAgain:'Spela igen', myPage:'Min sida', game:'spel', games:'spel', gamesStat:'Spel', correct:'rätt', wrong:'fel',
-        correctAnswers:'Rätta svar', wrongAttempts:'Felaktiga försök', totalTime:'Tid totalt',
+        correctAnswers:'Rätta svar', wrongAttempts:'Felaktiga försök', point:'poäng', points:'poäng', totalTime:'Tid totalt',
         avgTime:'Snittid per löst tal', avgShort:'Snitt', skipped:'Hoppat över',
         attempts:'Försök', enterNumber:'Skriv ett tal först. Du kan det här! ✨',
         success:'Jaa! Rätt svar! 🎉 Bra jobbat!', tryAgain:'Nästan! 🌟 Prova igen, du klarar det!',
@@ -369,7 +381,7 @@
         resultsLabel:'Game results', greatJob:'Great job! 🎉', resultsIntro:'Here are your results,',
         yourQuestions:'Your questions', noAnswers:'No questions to show yet.',
         playAgain:'Play again', myPage:'My page', game:'game', games:'games', gamesStat:'Games', correct:'right', wrong:'wrong',
-        correctAnswers:'Correct answers', wrongAttempts:'Incorrect attempts', totalTime:'Total time',
+        correctAnswers:'Correct answers', wrongAttempts:'Incorrect attempts', point:'point', points:'points', totalTime:'Total time',
         avgTime:'Average time per solved question', avgShort:'Average', skipped:'Skipped',
         attempts:'Tries', enterNumber:'Type a number first. You can do it! ✨',
         success:'Yes! That is right! 🎉 Great job!', tryAgain:'Almost! 🌟 Try again. You can do it!',
@@ -730,7 +742,11 @@
     function renderDashboard() {
       $('profile-name').textContent = profileName();
       const sessions = activeProfile().sessions;
+      // One correct answer in a completed, saved game equals one lifetime point.
+      // Legacy sessions and future game types are counted the same way. Skips,
+      // mistakes and unfinished games do not earn points.
       const correct = sessions.reduce((sum, s) => sum + s.correct, 0);
+      $('profile-points').textContent = `⭐ ${correct} ${t(correct === 1 ? 'point' : 'points')}`;
       const mistakes = sessions.reduce((sum, s) => sum + s.wrong, 0);
       const total = sessions.reduce((sum, s) => sum + s.elapsedMs, 0);
       const solvedDuration = sessions.reduce((sum, s) => sum + s.questions.filter(q => !q.skipped).reduce((n, q) => n + q.duration, 0), 0);
