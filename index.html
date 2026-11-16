@@ -38,6 +38,12 @@
     .profile-card span.count{display:block;color:#475569;font-size:14px;margin:5px 0 12px}
     .profile-card button{min-height:46px}
     .profile-card strong{overflow-wrap:anywhere}
+    /* A player chooses a level for every new game; neither option starts selected. */
+    .level-heading{font-weight:750;margin:0 0 8px}
+    .level-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+    .level-option{min-height:80px;border:2px solid #ddd6fe;background:#fbfaff;color:#312e81;font-size:25px;font-variant-numeric:tabular-nums}
+    .level-option[aria-pressed="true"]{border-color:#6d28d9;background:#ede9fe;box-shadow:inset 0 0 0 1px #6d28d9}
+    .level-context{color:#51467d;font-size:14px;font-weight:750;margin:-9px 0 17px}
     .profile-card .animal{font-size:48px}
     .create-box{border:1px solid #ddd6fe;background:#fbfaff;border-radius:16px;padding:18px;margin-top:16px}
     .create-box h2{margin-bottom:8px}
@@ -183,7 +189,13 @@
     <section id="dashboard" aria-label="Spelarens sida" data-i18n-aria="dashboardLabel" hidden>
       <div class="topbar"><span class="pill" id="profile-name"></span><button class="secondary tiny-button" id="switch-profile" type="button" data-i18n="switchProfile">Byt spelare</button></div>
       <p class="sub" data-i18n="yourGamesInfo">Här finns dina spel och dina resultat.</p>
-      <button class="primary" type="button" id="start" data-i18n="playNow">Spela nu</button>
+      <!-- No default: the player must actively choose a level for each game. -->
+      <p class="level-heading" id="level-label" data-i18n="chooseLevel">Välj nivå</p>
+      <div class="level-picker" role="group" aria-labelledby="level-label">
+        <button class="level-option" type="button" id="level-basic" aria-pressed="false">1–10</button>
+        <button class="level-option" type="button" id="level-advanced" aria-pressed="false">11–20</button>
+      </div>
+      <button class="primary" type="button" id="start" disabled>Välj nivå för att spela</button>
       <h3 data-i18n="pastGames">Tidigare spel</h3>
       <div class="stats-grid" id="all-stats"></div>
       <div id="session-list"></div>
@@ -211,6 +223,7 @@
     <section id="results" aria-label="Resultat från spelet" data-i18n-aria="resultsLabel" hidden>
       <h2 id="results-title" tabindex="-1" data-i18n="greatJob">Bra jobbat! 🎉</h2>
       <p class="sub"><span data-i18n="resultsIntro">Här är dina resultat,</span> <span id="results-name"></span>!</p>
+      <p class="level-context" id="results-level"></p>
       <div class="stats-grid" id="result-stats"></div>
       <h3 data-i18n="yourQuestions">Dina uppgifter</h3>
       <ul class="history" id="history"></ul>
@@ -232,7 +245,7 @@
         chooseLabel:'Välj spelare', lion:'Lejonet', bear:'Björnen',
         saveInfo:'Dina spel sparas i den här webbläsaren när du trycker på ”Klar”.',
         dashboardLabel:'Spelarens sida', switchProfile:'Byt spelare', yourPage:'Din sida',
-        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', pastGames:'Tidigare spel',
+        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', chooseLevel:'Välj nivå', chooseLevelToPlay:'Välj nivå för att spela', level:'Nivå', pastGames:'Tidigare spel',
         noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
         gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
         gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift',
@@ -260,7 +273,7 @@
         chooseLabel:'Choose a player', lion:'Lion', bear:'Bear',
         saveInfo:'Your games are saved in this browser when you tap “Finish”.',
         dashboardLabel:'Player page', switchProfile:'Change player', yourPage:'Your page',
-        yourGamesInfo:'See your games and scores here.', playNow:'Play now', pastGames:'Past games',
+        yourGamesInfo:'See your games and scores here.', playNow:'Play now', chooseLevel:'Choose your level', chooseLevelToPlay:'Choose a level to play', level:'Level', pastGames:'Past games',
         noGames:'No games yet. Try one!', clearStats:'Delete all my results',
         gameLabel:'Game', timerLabel:'Time on this question', tally:'Solved', playing:'is playing',
         gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question',
@@ -286,6 +299,16 @@
     const languageKey = 'gangertabellen-language-v1';
     let language = 'sv';
     const t = key => text[language][key];
+    // Each level has ten first factors and ten second factors: 100 ordered pairs.
+    // Old saved sessions have no level and are always treated as the original 1–10 level.
+    const LEVELS = {
+      basic: {first:1,last:10,label:'1–10'},
+      advanced: {first:11,last:20,label:'11–20'}
+    };
+    const QUESTIONS_PER_LEVEL = 100;
+    const sessionLevel = session => session.level === undefined ? 'basic' : session.level;
+    const levelLabel = level => `${t('level')} ${LEVELS[level].label}`;
+    let selectedLevel = null, gameLevel = null;
     // A profile has a name, an emoji, an ID, and its own list of games.
     const storageKey = 'gangertabellen-custom-profiles-v1';
     const oldStorageKey = 'gangertabellen-profiler-v1';
@@ -307,13 +330,14 @@
       $('lang-en').setAttribute('aria-pressed', String(language === 'en'));
       updateGameActions();
       updateFinishAction();
+      updateLevelSelection();
       updateChooser();
       renderEmojiPicker();
       renderImportOptions();
       updateProfilePreview();
       if (selected) {
         $('profile-name').textContent = profileName();
-        $('playing-as').textContent = `${profileName()} ${t('playing')}`;
+        if (gameLevel) $('playing-as').textContent = `${profileName()} ${t('playing')} · ${levelLabel(gameLevel)}`;
         $('results-name').textContent = profileName();
         $('tally').textContent = `⭐ ${t('tally')}: ${questions.filter(q => !q.skipped).length}`;
         if (!$('dashboard').hidden) renderDashboard();
@@ -350,14 +374,19 @@
       $('intro').hidden = screen !== 'choose';
       updatePageTitle();
     }
-    // Accept only well-formed past games. This also checks old Lion and Bear games.
+    // Check saved sessions before loading. Legacy sessions without `level` use basic.
+    // Keep the factor ranges tied to each level, so advanced games survive reloads.
     function validSession(session) {
-      return session && typeof session.date === 'string' &&
+      if (!session) return false;
+      const level = sessionLevel(session);
+      if (level !== 'basic' && level !== 'advanced') return false;
+      const {first,last} = LEVELS[level];
+      return typeof session.date === 'string' &&
         Number.isFinite(session.elapsedMs) && session.elapsedMs >= 0 &&
         Number.isInteger(session.correct) && session.correct >= 0 &&
         Number.isInteger(session.wrong) && session.wrong >= 0 &&
         Array.isArray(session.questions) && session.questions.every(q =>
-          q && Number.isInteger(q.a) && q.a >= 1 && q.a <= 10 &&
+          q && Number.isInteger(q.a) && q.a >= first && q.a <= last &&
           Number.isInteger(q.b) && q.b >= 1 && q.b <= 10 &&
           Number.isFinite(q.duration) && q.duration >= 0 &&
           Array.isArray(q.attempts) && q.attempts.every(a =>
@@ -394,11 +423,11 @@
       try { localStorage.setItem(storageKey, JSON.stringify(profiles)); }
       catch { $('storage-warning').hidden = false; }
     }
-    // Choose uniformly among unsolved ordered pairs (1×1 through 10×10).
+    // Choose uniformly among the 100 ordered pairs in the selected level.
     // Avoid immediately repeating a skip unless it is the sole remaining pair.
     function randomPairIndex() {
       const candidates = [];
-      for (let i = 0; i < 100; i++) if (!solvedPairs.has(i)) candidates.push(i);
+      for (let i = 0; i < QUESTIONS_PER_LEVEL; i++) if (!solvedPairs.has(i)) candidates.push(i);
       if (!candidates.length) return null;
       if (candidates.length > 1 && lastPairIndex !== null) {
         const previous = candidates.indexOf(lastPairIndex);
@@ -533,7 +562,7 @@
         details.className = 'session'; body.className = 'session-body';
         const timestamp = new Date(session.date);
         const date = Number.isNaN(timestamp.getTime()) ? t('pastGames') : new Intl.DateTimeFormat(language === 'sv' ? 'sv-SE' : 'en-GB',{ dateStyle:'medium', timeStyle:'short' }).format(timestamp);
-        summary.textContent = `${date} · ${session.correct} ${t('correct')} · ${session.wrong} ${t('wrong')}`;
+        summary.textContent = `${date} · ${levelLabel(sessionLevel(session))} · ${session.correct} ${t('correct')} · ${session.wrong} ${t('wrong')}`;
         const overview = document.createElement('div');
         overview.textContent = `${t('totalTime')}: ${time(session.elapsedMs)} · ${t('avgShort')}: ${session.correct ? time(session.questions.filter(q => !q.skipped).reduce((n,q) => n + q.duration,0) / session.correct) : '–'}`;
         body.append(overview);
@@ -551,10 +580,26 @@
         details.append(summary,body); list.appendChild(details);
       }
     }
-    // Open one player's page.
+    // Each new game requires a deliberate selection on the player dashboard.
+    function updateLevelSelection() {
+      $('level-basic').setAttribute('aria-pressed', String(selectedLevel === 'basic'));
+      $('level-advanced').setAttribute('aria-pressed', String(selectedLevel === 'advanced'));
+      $('start').disabled = selectedLevel === null;
+      $('start').textContent = t(selectedLevel === null ? 'chooseLevelToPlay' : 'playNow');
+    }
+    function chooseLevel(level) {
+      if (level !== 'basic' && level !== 'advanced') return;
+      selectedLevel = level;
+      updateLevelSelection();
+    }
+    $('level-basic').addEventListener('click', () => chooseLevel('basic'));
+    $('level-advanced').addEventListener('click', () => chooseLevel('advanced'));
+
+    // Returning here clears the selection; even Play again requires a new choice.
     function openDashboard(id) {
       if (!profiles.some(p => p.id === id)) return;
-      selected = id; renderDashboard(); show('dashboard'); $('start').focus();
+      selected = id; selectedLevel = null;
+      renderDashboard(); updateLevelSelection(); show('dashboard'); $('level-basic').focus();
     }
     // Show a message below the answer box.
     function showFeedback(message,kind) {
@@ -584,7 +629,7 @@
       $('skip').classList.toggle('primary', solved);
       $('skip').classList.toggle('secondary', !solved);
       $('next-progress').hidden = !solved;
-      const label = solved ? t(solvedPairs.size === 100 ? 'seeResults' : 'next') : t('skip');
+      const label = solved ? t(solvedPairs.size === QUESTIONS_PER_LEVEL ? 'seeResults' : 'next') : t('skip');
       const remaining = nextDeadline === null ? null : Math.max(0, nextDeadline - (nextPausedAt ?? performance.now()));
       $('next-label').textContent = remaining === null ? label : `${label} (${Math.max(1, Math.ceil(remaining / 1000))})`;
     }
@@ -607,12 +652,12 @@
       nextFrame = null;
       if (nextDeadline === null || document.hidden || $('game').hidden) return;
       const remaining = Math.max(0, nextDeadline - performance.now());
-      const label = t(solvedPairs.size === 100 ? 'seeResults' : 'next');
+      const label = t(solvedPairs.size === QUESTIONS_PER_LEVEL ? 'seeResults' : 'next');
       $('next-label').textContent = `${label} (${Math.max(1, Math.ceil(remaining / 1000))})`;
       if (!reducedMotion.matches) $('next-progress').style.transform = `scaleX(${1 - remaining / NEXT_DELAY_MS})`;
       if (remaining === 0) {
         // The game ends after the hundredth unique answer.
-        if (solvedPairs.size === 100) finishGame();
+        if (solvedPairs.size === QUESTIONS_PER_LEVEL) finishGame();
         else advanceQuestion();
         return;
       }
@@ -633,7 +678,7 @@
       const i = randomPairIndex();
       if (i === null) { finishGame(); return; }
       lastPairIndex = i;
-      const a = Math.floor(i / 10) + 1, b = i % 10 + 1;
+      const a = Math.floor(i / 10) + LEVELS[gameLevel].first, b = i % 10 + 1;
       const now = performance.now();
       current = { a,b,product:a*b,startedAt:now,attemptStartedAt:now,solvedAt:null,duration:0,attempts:[],skipped:false };
       $('expression').textContent = `${a} × ${b} = ?`;
@@ -646,16 +691,20 @@
       stopAutoAdvance();
       // Next never archives an already solved question a second time.
       if (current && current.solvedAt === null) archiveCurrent(true);
-      if (solvedPairs.size === 100) finishGame();
+      if (solvedPairs.size === QUESTIONS_PER_LEVEL) finishGame();
       else newQuestion();
     }
 
-    // Start a new game with all 100 pairs available again.
+    // Start the chosen level with all its pairs available. Never reuse a prior selection.
     function startGame() {
+      if (!selectedLevel || !activeProfile()) return;
+      gameLevel = selectedLevel;
+      selectedLevel = null;
+      updateLevelSelection();
       stopAutoAdvance();
       questions = []; solvedPairs = new Set(); lastPairIndex = null;
       wrong = 0; current = null; lastSession = null; started = performance.now(); pausedAt = null;
-      $('playing-as').textContent = `${profileName()} ${t('playing')}`;
+      $('playing-as').textContent = `${profileName()} ${t('playing')} · ${levelLabel(gameLevel)}`;
       $('tally').textContent = `⭐ ${t('tally')}: 0`;
       show('game'); newQuestion(); clearInterval(ticker); ticker = setInterval(updateTimer,100);
     }
@@ -748,7 +797,7 @@
         clearTimeout(incorrectFlashTimer);
         $('question').classList.remove('incorrect','wiggle');
         current.solvedAt = now; current.duration = now-current.startedAt; questions.push(current);
-        solvedPairs.add((current.a - 1) * 10 + current.b - 1);
+        solvedPairs.add((current.a - LEVELS[gameLevel].first) * 10 + current.b - 1);
         $('tally').textContent = `⭐ ${t('tally')}: ${solvedPairs.size}`;
         $('timer').textContent = '⏱ ' + time(current.duration);
         feedbackKey = 'success'; feedbackKind = 'success'; showFeedback(t(feedbackKey),feedbackKind);
@@ -795,6 +844,7 @@
         [t('correctAnswers'),String(correct)],[t('wrongAttempts'),String(wrong)]
       ]);
       $('results-name').textContent = profileName();
+      $('results-level').textContent = levelLabel(sessionLevel(session));
       const list = $('history'); list.replaceChildren();
       $('empty-history').hidden = played.length !== 0;
       for (const [i,q] of played.entries()) {
@@ -825,7 +875,8 @@
       current = null;
       const correct = questions.filter(q => !q.skipped).length;
       const savedWrong = questions.reduce((total,q) => total + q.attempts.filter(a => !a.correct).length, 0);
-      lastSession = {date:new Date().toISOString(),elapsedMs,correct,wrong:savedWrong,questions};
+      // Only new games receive the level field; old saved sessions stay untouched.
+      lastSession = {level:gameLevel,date:new Date().toISOString(),elapsedMs,correct,wrong:savedWrong,questions};
       if (questions.length > 0) { activeProfile().sessions.push(lastSession); save(); updateChooser(); }
       renderResults(lastSession);
       show('results'); $('results-title').focus();
@@ -849,7 +900,8 @@
       else $('profile-list').querySelector('button')?.focus();
     });
     $('start').addEventListener('click',startGame);
-    $('restart').addEventListener('click',startGame);
+    // Play again returns to level selection instead of silently reusing the last level.
+    $('restart').addEventListener('click',() => openDashboard(selected));
     $('back-to-profile').addEventListener('click',() => openDashboard(selected));
     // Clearing game history keeps the player's name and emoji.
     $('clear-stats').addEventListener('click',() => {
