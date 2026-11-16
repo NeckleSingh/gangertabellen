@@ -1,0 +1,16 @@
+{
+  "name": "Träna Matte",
+  "short_name": "Träna Matte",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5ff",
+  "theme_color": "#f7f5ff",
+  "icons": [
+    {
+      "src": "./gangertabellen-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
