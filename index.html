@@ -45,6 +45,15 @@
     .profile-card span.count{display:block;color:#475569;font-size:14px;margin:5px 0 12px}
     .profile-card button{min-height:46px}
     .profile-card strong{overflow-wrap:anywhere}
+    /* Ordinary play has one unambiguous Choose button per profile.
+       A separate edit mode turns these into Edit buttons only when requested. */
+    .profile-card .profile-select{width:100%;padding:9px 7px}
+    .profile-mode-controls{display:flex;justify-content:flex-end;margin:0 0 12px}
+    .profile-mode-controls button{width:auto;min-height:44px;font-size:14px}
+    .profile-mode-hint{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid #c4b5fd;background:#f5f3ff;color:#493773;font-weight:750;line-height:1.4}
+    .edit-box{margin-top:16px}
+    .edit-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+    .edit-actions button{margin:0}
     /* A player chooses a level for every new game; neither option starts selected. */
     .level-heading{font-weight:750;margin:0 0 8px}
     .level-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
@@ -202,9 +211,31 @@
     <div id="storage-warning" class="feedback notice" role="status" hidden data-i18n="storageWarning">Det går inte att spara här just nu. Resultaten finns bara tills du stänger sidan.</div>
     <!-- First screen: create or choose a personal profile. -->
     <section id="choose" aria-label="Välj spelare" data-i18n-aria="chooseLabel">
+      <!-- Editing is a deliberate separate mode, not a second button beside Play. -->
+      <div id="profile-mode-controls" class="profile-mode-controls" hidden>
+        <button id="toggle-profile-edit" type="button" class="secondary" aria-pressed="false">✏️ Redigera profiler</button>
+      </div>
+      <p id="profile-mode-hint" class="profile-mode-hint" role="status" hidden>Välj en profil att ändra.</p>
       <div class="profile-grid" id="profile-list"></div>
       <p id="no-profiles" class="empty" data-i18n="noProfiles">Inga spelare än. Gör en profil för att börja!</p>
       <p id="profile-limit" class="empty" hidden data-i18n="profileLimit">Du kan ha högst 4 profiler.</p>
+      <!-- Editing changes only the existing name and emoji, never the profile ID or games. -->
+      <div id="edit-box" class="create-box edit-box" role="region" aria-labelledby="edit-heading" hidden>
+        <h2 id="edit-heading" data-i18n="editHeading">Redigera profil</h2>
+        <form id="edit-profile" novalidate>
+          <label for="edit-name" data-i18n="profileName">Namn</label>
+          <input id="edit-name" type="text" maxlength="24" autocomplete="off" autocapitalize="words" placeholder="Skriv ditt namn" data-i18n-placeholder="namePlaceholder" aria-describedby="edit-name-help edit-error" required>
+          <p id="edit-name-help" class="name-help" data-i18n="nameHelp">Använd bara bokstäver och mellanslag.</p>
+          <label id="edit-emoji-label" data-i18n="chooseEmoji">Välj en emoji</label>
+          <div class="emoji-grid" id="edit-emoji-grid" role="group" aria-labelledby="edit-emoji-label"></div>
+          <div class="profile-preview" role="group" aria-labelledby="edit-preview-label">
+            <span class="profile-preview-icon" id="edit-preview-emoji" aria-hidden="true">🦁</span>
+            <div class="profile-preview-text"><span class="profile-preview-label" id="edit-preview-label" data-i18n="editPreview">Din uppdaterade profil</span><strong class="profile-preview-name" id="edit-preview-name"></strong></div>
+          </div>
+          <p class="create-error" id="edit-error" role="alert" aria-live="polite"></p>
+          <div class="edit-actions"><button class="primary" type="submit" data-i18n="saveChanges">Spara</button><button class="secondary" id="cancel-edit" type="button" data-i18n="cancel">Avbryt</button></div>
+        </form>
+      </div>
       <div id="create-box" class="create-box">
         <h2 data-i18n="addProfile">Lägg till spelare</h2>
         <form id="create-profile" novalidate>
@@ -316,7 +347,7 @@
         success:'Jaa! Rätt svar! 🎉 Bra jobbat!', tryAgain:'Nästan! 🌟 Prova igen, du klarar det!',
         noProfiles:'Inga spelare än. Gör en profil för att börja!', profileLimit:'Du kan ha högst 4 profiler.',
         addProfile:'Lägg till spelare', profileName:'Namn', namePlaceholder:'Skriv ditt namn', nameHelp:'Använd bara bokstäver och mellanslag.', nameLetters:'Använd bara bokstäver och mellanslag.', chooseEmoji:'Välj en emoji', profilePreview:'Så här blir din profil', previewName:'Ditt namn',
-        createProfile:'Skapa profil', choosePlayer:'Välj', deleteProfile:'Ta bort min profil',
+        createProfile:'Skapa profil', choosePlayer:'Välj', editProfiles:'✏️ Redigera profiler', cancelEditMode:'Avbryt redigering', chooseProfileToEdit:'Välj en profil att ändra.', editProfile:'✏️ Ändra', editProfileFor:name => `Redigera ${name}`, editHeading:'Redigera profil', editPreview:'Din uppdaterade profil', saveChanges:'Spara', cancel:'Avbryt', deleteProfile:'Ta bort min profil',
         importHistory:'Importera gammal profil (valfritt)', importInfo:'Flytta spel från din gamla Lejonet- eller Björnen-profil. Den gamla profilen finns kvar.',
         noImport:'Importera inte', enterName:'Skriv ett namn först.', duplicateName:'Det namnet finns redan. Prova ett annat.',
         limitError:'Du kan ha högst 4 profiler.',
@@ -344,7 +375,7 @@
         success:'Yes! That is right! 🎉 Great job!', tryAgain:'Almost! 🌟 Try again. You can do it!',
         noProfiles:'No players yet. Make a profile to start!', profileLimit:'You can have up to 4 profiles.',
         addProfile:'Add player', profileName:'Name', namePlaceholder:'Type your name', nameHelp:'Use letters and spaces only.', nameLetters:'Use letters and spaces only.', chooseEmoji:'Choose an emoji', profilePreview:'Your new profile', previewName:'Your name',
-        createProfile:'Create profile', choosePlayer:'Choose', deleteProfile:'Delete my profile',
+        createProfile:'Create profile', choosePlayer:'Choose', editProfiles:'✏️ Edit profiles', cancelEditMode:'Cancel editing', chooseProfileToEdit:'Choose a profile to edit.', editProfile:'✏️ Edit', editProfileFor:name => `Edit ${name}`, editHeading:'Edit profile', editPreview:'Your updated profile', saveChanges:'Save', cancel:'Cancel', deleteProfile:'Delete my profile',
         importHistory:'Import old profile (optional)', importInfo:'Bring games from your old Lion or Bear profile. The old profile stays as it is.',
         noImport:'Do not import', enterName:'Type a name first.', duplicateName:'That name is taken. Try a different one.',
         limitError:'You can have up to 4 profiles.',
@@ -370,6 +401,7 @@
     const oldStorageKey = 'gangertabellen-profiler-v1';
     const emojiChoices = ['🦁','🐻','🐱','🐶','🦊','🐼','🐸','🐵','🦄','🐯','🐨','🐧','🐙','🦋','🚀','⭐','🌈','⚽'];
     let profiles = [], oldGames = { lion:[], bear:[] }, selected = null, chosenEmoji = emojiChoices[0];
+    let editMode = false, editingProfileId = null, editingEmoji = emojiChoices[0], editErrorKey = null;
     const activeProfile = () => profiles.find(p => p.id === selected);
     const profileName = () => { const p = activeProfile(); return p ? `${p.emoji} ${p.name}` : ''; };
     const gamesCount = count => `${count} ${t(count === 1 ? 'game' : 'games')}`;
@@ -390,8 +422,11 @@
       updateLevelSelection();
       updateChooser();
       renderEmojiPicker();
+      renderEditEmojiPicker();
       renderImportOptions();
       updateProfilePreview();
+      updateEditPreview();
+      if (editErrorKey) $('edit-error').textContent = t(editErrorKey);
       if (selected) {
         $('profile-name').textContent = profileName();
         if (gameLevel) $('playing-as').textContent = `${profileName()} ${t('playing')} · ${levelLabel(gameLevel)}`;
@@ -509,23 +544,45 @@
     // Display only each question's total time; keep individual attempt timings in storage.
     function seconds(ms) { return `${(ms / 1000).toFixed(1).replace('.',language === 'sv' ? ',' : '.')} s`; }
     function questionTime(ms) { return ms < 60000 ? seconds(ms) : time(ms); }
-    // Draw the player list. The create form is hidden at the four-profile limit.
+    // Draw one clear action for each player. Edit actions appear only after the
+    // separate "Edit profiles" mode has been deliberately enabled.
     function updateChooser() {
+      const editing = editingProfileId !== null;
       const list = $('profile-list'); list.replaceChildren();
       for (const p of profiles) {
         const card = document.createElement('div'); card.className = 'profile-card';
         const icon = document.createElement('span'); icon.className = 'animal'; icon.setAttribute('aria-hidden','true'); icon.textContent = p.emoji;
         const name = document.createElement('strong'); name.textContent = p.name;
         const count = document.createElement('span'); count.className = 'count'; count.textContent = gamesCount(p.sessions.length);
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'primary';
-        button.textContent = t('choosePlayer');
-        button.setAttribute('aria-label',`${t('choosePlayer')} ${p.name}`);
-        button.addEventListener('click', () => openDashboard(p.id));
+        const button = document.createElement('button'); button.type = 'button';
+        button.className = `${editMode ? 'secondary' : 'primary'} profile-select`;
+        button.textContent = t(editMode ? 'editProfile' : 'choosePlayer');
+        button.setAttribute('aria-label', editMode ? t('editProfileFor')(p.name) : `${t('choosePlayer')} ${p.name}`);
+        button.dataset.profileId = p.id;
+        button.addEventListener('click', () => editMode ? openProfileEditor(p.id) : openDashboard(p.id));
         card.append(icon,name,count,button); list.appendChild(card);
       }
-      $('no-profiles').hidden = profiles.length !== 0;
-      $('create-box').hidden = profiles.length >= 4;
-      $('profile-limit').hidden = profiles.length < 4;
+      // Hide the other players while a profile is being edited; the form's
+      // Save/Cancel buttons are the only ways to return to normal play.
+      list.hidden = editing;
+      $('profile-mode-controls').hidden = editing || profiles.length === 0;
+      $('toggle-profile-edit').textContent = t(editMode ? 'cancelEditMode' : 'editProfiles');
+      $('toggle-profile-edit').setAttribute('aria-pressed',String(editMode));
+      $('profile-mode-hint').hidden = !editMode || editing;
+      $('profile-mode-hint').textContent = t('chooseProfileToEdit');
+      $('choose').setAttribute('aria-label',t(editMode && !editing ? 'chooseProfileToEdit' : 'chooseLabel'));
+      $('intro').textContent = t('intro');
+      $('intro').hidden = editing || editMode || $('choose').hidden; // The mode hint gives the instruction once.
+      $('no-profiles').hidden = editing || profiles.length !== 0;
+      $('create-box').hidden = editing || editMode || profiles.length >= 4;
+      $('profile-limit').hidden = editing || editMode || profiles.length < 4;
+    }
+    function toggleProfileEditMode() {
+      if (editingProfileId !== null || profiles.length === 0) return;
+      editMode = !editMode;
+      updateChooser();
+      if (editMode) $('profile-list').querySelector('button')?.focus();
+      else $('toggle-profile-edit').focus();
     }
     // Show the current name and emoji. This preview does not save a profile.
     function updateProfilePreview() {
@@ -533,16 +590,71 @@
       $('preview-name').textContent = name || t('previewName');
       $('preview-emoji').textContent = chosenEmoji;
     }
-    // Let players choose a safe emoji from a small set.
-    function renderEmojiPicker() {
-      const grid = $('emoji-grid'); grid.replaceChildren();
+    // Both profile forms use the same familiar, accessible emoji choices.
+    function renderEmojiOptions(gridId, chosen, onChoose) {
+      const grid = $(gridId); grid.replaceChildren();
       for (const emoji of emojiChoices) {
         const button = document.createElement('button'); button.type = 'button'; button.textContent = emoji;
         button.setAttribute('aria-label',emoji);
-        button.setAttribute('aria-pressed',String(emoji === chosenEmoji));
-        button.addEventListener('click', () => { chosenEmoji = emoji; for (const other of grid.children) other.setAttribute('aria-pressed', String(other === button)); updateProfilePreview(); });
+        button.setAttribute('aria-pressed',String(emoji === chosen));
+        button.addEventListener('click', () => {
+          onChoose(emoji);
+          for (const other of grid.children) other.setAttribute('aria-pressed',String(other === button));
+        });
         grid.appendChild(button);
       }
+    }
+    function renderEmojiPicker() {
+      renderEmojiOptions('emoji-grid', chosenEmoji, emoji => { chosenEmoji = emoji; updateProfilePreview(); });
+    }
+    function renderEditEmojiPicker() {
+      renderEmojiOptions('edit-emoji-grid', editingEmoji, emoji => { editingEmoji = emoji; updateEditPreview(); });
+    }
+    function updateEditPreview() {
+      const name = $('edit-name').value.trim().replace(/\s+/g,' ');
+      $('edit-preview-name').textContent = name || t('previewName');
+      $('edit-preview-emoji').textContent = editingEmoji;
+    }
+    function focusProfile(id) {
+      [...$('profile-list').querySelectorAll('[data-profile-id]')]
+        .find(button => button.dataset.profileId === id)?.focus();
+    }
+    function closeProfileEditor(restoreFocus = true) {
+      const id = editingProfileId;
+      editingProfileId = null;
+      editMode = false; // After Save or Cancel, profile cards select players again.
+      $('edit-box').hidden = true;
+      editErrorKey = null;
+      $('edit-error').textContent = '';
+      updateChooser();
+      if (restoreFocus && id !== null) focusProfile(id);
+    }
+    function openProfileEditor(id) {
+      if (!editMode) return; // Editing is never triggered during ordinary play.
+      const profile = profiles.find(p => p.id === id);
+      if (!profile) return;
+      editingProfileId = id;
+      editingEmoji = profile.emoji;
+      $('edit-name').value = profile.name;
+      editErrorKey = null;
+      $('edit-error').textContent = '';
+      $('edit-box').hidden = false;
+      renderEditEmojiPicker(); updateEditPreview(); updateChooser();
+      $('edit-name').focus();
+    }
+    function saveEditedProfile(event) {
+      event.preventDefault();
+      const profile = profiles.find(p => p.id === editingProfileId);
+      if (!profile) { closeProfileEditor(false); return; }
+      const name = normalizeProfileName($('edit-name').value);
+      const error = profileNameError(name, profile.id);
+      editErrorKey = error;
+      $('edit-error').textContent = error ? t(error) : '';
+      if (error) { $('edit-name').focus(); return; }
+      // Mutate only identity labels: the ID and entire sessions array remain untouched.
+      profile.name = name;
+      profile.emoji = editingEmoji;
+      save(); closeProfileEditor();
     }
     // The old animal games stay untouched. Importing copies them to a new profile.
     function renderImportOptions() {
@@ -558,39 +670,45 @@
       }
       select.value = value === 'lion' || value === 'bear' ? value : '';
     }
-    // Allow letters from all alphabets and spaces. Remove numbers and symbols.
-    // The form checks the name again before it saves a profile.
-    $('new-name').addEventListener('beforeinput', event => {
-      if (event.isComposing || event.inputType !== 'insertText' || !event.data) return;
-      if (/[^\p{L} ]/u.test(event.data)) event.preventDefault();
-    });
-    $('new-name').addEventListener('input', event => {
-      if (event.isComposing) return;
-      const field = event.currentTarget;
-      const cleaned = field.value.normalize('NFC').replace(/[^\p{L} ]/gu, '');
-      if (field.value !== cleaned) {
-        field.value = cleaned;
-        field.setSelectionRange(field.value.length, field.value.length);
-      }
-      updateProfilePreview();
-    });
-    $('new-name').addEventListener('compositionend', event => {
-      const field = event.currentTarget;
-      field.value = field.value.normalize('NFC').replace(/[^\p{L} ]/gu, '');
-      updateProfilePreview();
-    });
+    // Allow letters from all alphabets and spaces in both create and edit forms.
+    function attachNameFilter(fieldId, updatePreview) {
+      const field = $(fieldId);
+      field.addEventListener('beforeinput', event => {
+        if (event.isComposing || event.inputType !== 'insertText' || !event.data) return;
+        if (/[^\p{L} ]/u.test(event.data)) event.preventDefault();
+      });
+      field.addEventListener('input', event => {
+        if (event.isComposing) return;
+        const cleaned = field.value.normalize('NFC').replace(/[^\p{L} ]/gu, '');
+        if (field.value !== cleaned) {
+          field.value = cleaned;
+          field.setSelectionRange(field.value.length, field.value.length);
+        }
+        updatePreview();
+      });
+      field.addEventListener('compositionend', () => {
+        field.value = field.value.normalize('NFC').replace(/[^\p{L} ]/gu, '');
+        updatePreview();
+      });
+    }
+    attachNameFilter('new-name', updateProfilePreview);
+    attachNameFilter('edit-name', updateEditPreview);
+    const normalizeProfileName = value => value.trim().replace(/\s+/g,' ').normalize('NFC');
+    function profileNameError(name, exceptId = null) {
+      if (!name || name.length > 24) return 'enterName';
+      if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(name)) return 'nameLetters';
+      if (profiles.some(p => p.id !== exceptId && p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) return 'duplicateName';
+      return null;
+    }
     // Start with no player. A name and one emoji are required for a new profile.
     function createProfile(event) {
       event.preventDefault();
-      const name = $('new-name').value.trim().replace(/\s+/g,' ').normalize('NFC');
+      const name = normalizeProfileName($('new-name').value);
       const error = $('create-error'); error.textContent = '';
       if (profiles.length >= 4) { error.textContent = t('limitError'); return; }
-      if (!name || name.length > 24) { error.textContent = t('enterName'); $('new-name').focus(); return; }
-      // Check again when saving. Scripted input must not bypass the input filter.
-      if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(name)) { error.textContent = t('nameLetters'); $('new-name').focus(); return; }
-      if (profiles.some(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
-        error.textContent = t('duplicateName'); $('new-name').focus(); return;
-      }
+      // Validate on save too, so pasted or scripted input cannot bypass the filter.
+      const invalid = profileNameError(name);
+      if (invalid) { error.textContent = t(invalid); $('new-name').focus(); return; }
       const bytes = new Uint32Array(2); crypto.getRandomValues(bytes);
       const importFrom = $('import-history').value;
       const copied = (importFrom === 'lion' || importFrom === 'bear') ? JSON.parse(JSON.stringify(oldGames[importFrom])) : [];
@@ -660,6 +778,7 @@
     // Returning here clears the selection; even Play again requires a new choice.
     function openDashboard(id) {
       if (!profiles.some(p => p.id === id)) return;
+      if (editingProfileId !== null) closeProfileEditor(false);
       selected = id; selectedLevel = null;
       renderDashboard(); updateLevelSelection(); show('dashboard'); $('level-basic').focus();
     }
@@ -1023,7 +1142,14 @@
     });
     // The new-player form is available from the player choice screen.
     $('create-profile').addEventListener('submit', createProfile);
+    $('toggle-profile-edit').addEventListener('click', toggleProfileEditMode);
+    $('edit-profile').addEventListener('submit', saveEditedProfile);
+    $('cancel-edit').addEventListener('click', () => closeProfileEditor());
+    $('edit-profile').addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); closeProfileEditor(); }
+    });
     $('switch-profile').addEventListener('click',() => {
+      editMode = false;
       selected = null; show('choose'); updateChooser();
       if (profiles.length < 4) $('new-name').focus();
       else $('profile-list').querySelector('button')?.focus();
