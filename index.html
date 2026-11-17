@@ -281,11 +281,12 @@
         <button class="secondary tiny-button" id="switch-profile" type="button" data-i18n="switchProfile">Byt spelare</button>
       </div>
       <p class="sub" data-i18n="yourGamesInfo">Här finns dina spel och dina resultat.</p>
-      <!-- Neither operation nor level is preselected for a new game. -->
+      <!-- Choose a game each time. Two-level games also require a level choice. -->
       <p class="level-heading" id="operation-label" data-i18n="chooseOperation">Välj räknesätt</p>
       <div class="operation-picker" role="group" aria-labelledby="operation-label">
         <button class="operation-option" id="operation-multiplication" type="button" aria-pressed="false"><strong aria-hidden="true">×</strong><span data-i18n="multiplicationShort">Gånger</span></button>
         <button class="operation-option" id="operation-addition" type="button" aria-pressed="false"><strong aria-hidden="true">+</strong><span data-i18n="addition">Addition</span></button>
+        <button class="operation-option" id="operation-subtraction" type="button" aria-pressed="false"><strong aria-hidden="true">−</strong><span data-i18n="subtractionShort">Minus</span></button>
       </div>
       <div id="level-controls" hidden>
         <p class="level-heading" id="level-label" data-i18n="chooseLevel">Välj nivå</p>
@@ -294,6 +295,7 @@
           <button class="level-option" type="button" id="level-advanced" aria-pressed="false">11–20</button>
         </div>
       </div>
+      <p id="single-level-info" class="level-context" hidden></p>
       <button class="primary" type="button" id="start" disabled>Välj räknesätt för att spela</button>
       <h3 data-i18n="pastGames">Tidigare spel</h3>
       <div class="stats-grid" id="all-stats"></div>
@@ -356,7 +358,7 @@
         chooseLabel:'Välj spelare', lion:'Lejonet', bear:'Björnen',
         saveInfo:'Dina spel sparas i den här webbläsaren när du trycker på ”Klar”.',
         dashboardLabel:'Spelarens sida', switchProfile:'Byt spelare', yourPage:'Din sida',
-        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', chooseOperation:'Välj räknesätt', chooseOperationToPlay:'Välj räknesätt för att spela', multiplication:'Multiplikation', multiplicationShort:'Gånger', addition:'Addition', chooseLevel:'Välj nivå', chooseLevelToPlay:'Välj nivå för att spela', level:'Nivå', pastGames:'Tidigare spel',
+        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', chooseOperation:'Välj räknesätt', chooseOperationToPlay:'Välj räknesätt för att spela', multiplication:'Multiplikation', multiplicationShort:'Gånger', addition:'Addition', subtraction:'Subtraktion', subtractionShort:'Minus', subtractionLevel:'Upp till 50', subtractionHint:'Starttal upp till 50 · Svaret kan bli 0', chooseLevel:'Välj nivå', chooseLevelToPlay:'Välj nivå för att spela', level:'Nivå', pastGames:'Tidigare spel',
         noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
         gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
         gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift',
@@ -384,7 +386,7 @@
         chooseLabel:'Choose a player', lion:'Lion', bear:'Bear',
         saveInfo:'Your games are saved in this browser when you tap “Finish”.',
         dashboardLabel:'Player page', switchProfile:'Change player', yourPage:'Your page',
-        yourGamesInfo:'See your games and scores here.', playNow:'Play now', chooseOperation:'Choose a game', chooseOperationToPlay:'Choose a game to play', multiplication:'Multiplication', multiplicationShort:'Multiply', addition:'Addition', chooseLevel:'Choose your level', chooseLevelToPlay:'Choose a level to play', level:'Level', pastGames:'Past games',
+        yourGamesInfo:'See your games and scores here.', playNow:'Play now', chooseOperation:'Choose a game', chooseOperationToPlay:'Choose a game to play', multiplication:'Multiplication', multiplicationShort:'Multiply', addition:'Addition', subtraction:'Subtraction', subtractionShort:'Subtract', subtractionLevel:'Up to 50', subtractionHint:'Starting numbers up to 50 · Answers can be 0', chooseLevel:'Choose your level', chooseLevelToPlay:'Choose a level to play', level:'Level', pastGames:'Past games',
         noGames:'No games yet. Try one!', clearStats:'Delete all my results',
         gameLabel:'Game', timerLabel:'Time on this question', tally:'Solved', playing:'is playing',
         gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question',
@@ -416,20 +418,22 @@
       basic: {first:1,last:10,label:'1–10'},
       advanced: {first:11,last:20,label:'11–20'},
       addBasic: {minSum:2,maxSum:50,label:'1–50'},
-      addAdvanced: {minSum:51,maxSum:100,label:'51–100'}
+      addAdvanced: {minSum:51,maxSum:100,label:'51–100'},
+      subtract: {maxStart:50}
     };
     const OPERATION_LEVELS = {
       multiplication: ['basic','advanced'],
-      addition: ['addBasic','addAdvanced']
+      addition: ['addBasic','addAdvanced'],
+      subtraction: ['subtract']
     };
     const MAX_SOLVED_PER_GAME = 100;
     // Games saved before operations existed are multiplication games.
     const sessionOperation = session => session.operation === undefined ? 'multiplication' : session.operation;
     const sessionLevel = session => session.level === undefined ? 'basic' : session.level;
-    const levelLabel = level => `${t('level')} ${LEVELS[level].label}`;
+    const levelLabel = level => level === 'subtract' ? t('subtractionLevel') : `${t('level')} ${LEVELS[level].label}`;
     const operationLabel = operation => t(operation);
-    const operationSymbol = operation => operation === 'addition' ? '+' : '×';
-    const operationAnswer = (operation,a,b) => operation === 'addition' ? a+b : a*b;
+    const operationSymbol = operation => ({multiplication:'×',addition:'+',subtraction:'−'})[operation];
+    const operationAnswer = (operation,a,b) => operation === 'addition' ? a+b : operation === 'subtraction' ? a-b : a*b;
     const sessionDescription = session => `${operationLabel(sessionOperation(session))} · ${levelLabel(sessionLevel(session))}`;
     let selectedOperation = null, selectedLevel = null, gameOperation = null, gameLevel = null;
     // A profile has a name, an emoji, an ID, and its own list of games.
@@ -520,6 +524,10 @@
         if (operation === 'multiplication') {
           return a >= LEVELS[level].first && a <= LEVELS[level].last && b >= 1 && b <= 10;
         }
+        if (operation === 'subtraction') {
+          // Both operands are positive and the result is never negative (0 is allowed).
+          return a >= 1 && a <= LEVELS[level].maxStart && b >= 1 && b <= a;
+        }
         const sum = a + b;
         return a >= 1 && b >= 1 && sum >= LEVELS[level].minSum && sum <= LEVELS[level].maxSum;
       };
@@ -574,17 +582,21 @@
       try { localStorage.setItem(storageKey, JSON.stringify(profiles)); }
       catch { $('storage-warning').hidden = false; }
     }
-    // Enumerate valid ordered pairs once per game: no retries for invalid sums.
-    // Multiplication keeps exactly the same 100 ordered pairs as before.
+    // Enumerate valid pairs once per game. Keep all solved pairs distinct,
+    // while a skipped pair remains available for another chance.
     function buildQuestionPool(operation,level) {
       const pairs = [];
       if (operation === 'multiplication') {
         for (let a = LEVELS[level].first; a <= LEVELS[level].last; a++)
           for (let b = 1; b <= 10; b++) pairs.push({a,b});
-      } else {
+      } else if (operation === 'addition') {
         const {minSum,maxSum} = LEVELS[level];
         for (let sum = minSum; sum <= maxSum; sum++)
           for (let a = 1; a < sum; a++) pairs.push({a,b:sum-a});
+      } else if (operation === 'subtraction') {
+        // 1..50 minus 1..starting-number: never negative, and can equal zero.
+        for (let a = 1; a <= LEVELS[level].maxStart; a++)
+          for (let b = 1; b <= a; b++) pairs.push({a,b});
       }
       return pairs;
     }
@@ -832,13 +844,15 @@
         details.append(summary,body); list.appendChild(details);
       }
     }
-    // Operation and level are always chosen explicitly for each fresh game.
+    // Single-level operations start directly; others require a deliberate level choice.
     function updateLevelSelection() {
       for (const operation of Object.keys(OPERATION_LEVELS))
         $(`operation-${operation}`).setAttribute('aria-pressed',String(selectedOperation === operation));
-      $('level-controls').hidden = selectedOperation === null;
-      if (selectedOperation) {
-        const levels = OPERATION_LEVELS[selectedOperation];
+      const levels = selectedOperation ? OPERATION_LEVELS[selectedOperation] : [];
+      $('level-controls').hidden = levels.length !== 2;
+      $('single-level-info').hidden = levels.length !== 1;
+      if (levels.length === 1) $('single-level-info').textContent = t('subtractionHint');
+      if (levels.length === 2) {
         $('level-basic').textContent = LEVELS[levels[0]].label;
         $('level-advanced').textContent = LEVELS[levels[1]].label;
         $('level-basic').setAttribute('aria-pressed',String(selectedLevel === levels[0]));
@@ -849,7 +863,9 @@
     }
     function chooseOperation(operation) {
       if (!OPERATION_LEVELS[operation]) return;
-      selectedOperation = operation; selectedLevel = null;
+      selectedOperation = operation;
+      const levels = OPERATION_LEVELS[operation];
+      selectedLevel = levels.length === 1 ? levels[0] : null;
       updateLevelSelection();
     }
     function chooseLevel(index) {
@@ -859,6 +875,7 @@
     }
     $('operation-multiplication').addEventListener('click', () => chooseOperation('multiplication'));
     $('operation-addition').addEventListener('click', () => chooseOperation('addition'));
+    $('operation-subtraction').addEventListener('click', () => chooseOperation('subtraction'));
     $('level-basic').addEventListener('click', () => chooseLevel(0));
     $('level-advanced').addEventListener('click', () => chooseLevel(1));
 
