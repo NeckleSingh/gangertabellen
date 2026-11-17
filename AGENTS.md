@@ -1,10 +1,10 @@
-# Agent Instructions — Gångertabellen
+# Agent Instructions — Träna Matte
 
 Before reviewing, proposing, or changing code in this repository, **read `DEVELOPMENT.md`**. It is the authoritative guide to the product's principles, architecture, coding standards, and change workflow.
 
 ## Non-negotiable defaults
 
-- Preserve a simple, browser-native multiplication practice game focused on repetition and encouraging feedback.
+- Preserve a simple, browser-native arithmetic practice game focused on repetition and encouraging feedback. Follow the operation-specific rules in DEVELOPMENT.md.
 - Keep player data in browser storage only. Never add accounts, external analytics, cloud storage, or data transmission without explicit owner approval.
 - Preserve compatibility with existing browser-stored profiles and game history. Never clear or silently reset stored data.
 - Prefer HTML, CSS, and vanilla JavaScript; add no dependencies, frameworks, backend, or build process without explicit approval.

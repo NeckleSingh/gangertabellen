@@ -1,15 +1,25 @@
-Gångertabellen — Development Guide
-This document describes the enduring product and engineering principles for Gångertabellen. Read it before proposing or making changes. Preserve these principles unless the project owner explicitly chooses to revise them.
+Träna Matte — Development Guide
+This document describes the enduring product and engineering principles for Träna Matte (formerly Gångertabellen). Read it before proposing or making changes. Preserve these principles unless the project owner explicitly chooses to revise them.
 Purpose
-Gångertabellen is a simple, encouraging multiplication-practice game for children. Its aim is to improve fluency through repetition, make it pleasant to keep practising, and allow children to recognise their own progress.
+Träna Matte is a simple, encouraging arithmetic-practice game for children. Its aim is to build fluency in multiplication, addition, subtraction and division through repetition, make practice enjoyable, and help children recognise their own progress.
 Product principles
 1. Keep it simple. Children should be able to use the app independently, with little explanation and few decisions. Avoid unnecessary screens, settings, and features.
 2. Encourage continued practice. Treat mistakes as part of learning. Use constructive, positive feedback rather than punishment, pressure, or shame.
-3. Preserve repetition. Multiplication recall practice is the core experience. Changes must not obscure or interrupt the basic question–answer–feedback loop.
+3. Preserve repetition. Arithmetic recall practice is the core experience. Changes must not obscure or interrupt the basic question–answer–feedback loop.
 4. Respect local data ownership. Player profiles and practice history stay in the browser. No account, cloud database, analytics tracking, or external transfer of children's data is needed. Users understand that clearing browser/site data may erase their history; do not add cloud sync or backup systems unless explicitly requested.
 5. Work as a browser app. The app must run directly in a normal browser and remain suitable for “Add to Home Screen” use on phones and tablets. A native app is not required.
 6. Treat Swedish and English as equal, permanent languages. Both languages are core to the product, not optional extras. New and changed player-facing features must work naturally in both languages. Do not remove or weaken language switching without the owner's explicit approval.
 7. Remain approachable. Support touch and keyboard interaction, responsive layouts, readable text, and accessibility.
+Learning rules and staged rollout
+- Multiplication keeps its original 1–10 and 11–20 levels: first factor within the selected range, second factor 1–10.
+- Addition has strict answer ranges 1–50 and 51–100; each number being added is at least 1 (so 1 is not itself an achievable sum). Do not include 0 as an addend.
+- Subtraction (planned separately) uses a starting number at most 50, never produces a negative answer, and may produce 0.
+- Division (planned separately) uses a dividend at most 80 with whole-number answers only; never divide by 0.
+- An operation should not be shown as selectable until its gameplay and history handling are implemented.
+- Correctly solved questions must not repeat within a game; skipped questions can reappear. Keep the current 100-correct-answer limit per game unless explicitly revised.
+- Require an explicit operation choice for each game, and a level choice when the operation has multiple levels. Single-level operations do not need an additional level choice.
+- One correctly solved question in a saved game earns one lifetime point. Calculate points from existing saved sessions rather than storing a second counter.
+- Older saved sessions without an operation or level are basic multiplication games. Preserve their history and scores as stored.
 Architecture and dependencies
 - The current app is a static, browser-native project with its interface, CSS, and JavaScript in index.html, plus static assets and GitHub Pages domain configuration.
 - Prefer HTML, CSS, and plain JavaScript. Do not introduce a framework, package manager, build step, backend, or other dependency without an explicit, demonstrated need and the owner's approval.
@@ -46,7 +56,7 @@ For every behavioural change, check the relevant items and explicitly state whic
 - App loads normally in a desktop and mobile browser.
 - Existing players and saved sessions remain intact after refresh or reopening.
 - Player selection, creation, and dashboard still work.
-- Multiplication questions, incorrect attempts, retries, and completion still behave correctly.
+- All implemented operation question ranges, incorrect attempts, retries, and completion still behave correctly; check multiplication for regressions.
 - Results, scores, session history, and timing remain consistent.
 - Both Swedish and English are complete and natural throughout affected screens, feedback, errors, results, and accessibility labels; language switching still works.
 - Touch input, keyboard input, small-screen layout, and relevant accessibility behaviours still work.
