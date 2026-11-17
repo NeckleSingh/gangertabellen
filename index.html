@@ -287,6 +287,7 @@
         <button class="operation-option" id="operation-multiplication" type="button" aria-pressed="false"><strong aria-hidden="true">×</strong><span data-i18n="multiplicationShort">Gånger</span></button>
         <button class="operation-option" id="operation-addition" type="button" aria-pressed="false"><strong aria-hidden="true">+</strong><span data-i18n="addition">Addition</span></button>
         <button class="operation-option" id="operation-subtraction" type="button" aria-pressed="false"><strong aria-hidden="true">−</strong><span data-i18n="subtractionShort">Minus</span></button>
+        <button class="operation-option" id="operation-division" type="button" aria-pressed="false"><strong aria-hidden="true">÷</strong><span data-i18n="divisionShort">Delat</span></button>
       </div>
       <div id="level-controls" hidden>
         <p class="level-heading" id="level-label" data-i18n="chooseLevel">Välj nivå</p>
@@ -358,7 +359,7 @@
         chooseLabel:'Välj spelare', lion:'Lejonet', bear:'Björnen',
         saveInfo:'Dina spel sparas i den här webbläsaren när du trycker på ”Klar”.',
         dashboardLabel:'Spelarens sida', switchProfile:'Byt spelare', yourPage:'Din sida',
-        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', chooseOperation:'Välj räknesätt', chooseOperationToPlay:'Välj räknesätt för att spela', multiplication:'Multiplikation', multiplicationShort:'Gånger', addition:'Addition', subtraction:'Subtraktion', subtractionShort:'Minus', subtractionLevel:'Upp till 50', subtractionHint:'Starttal upp till 50 · Svaret kan bli 0', chooseLevel:'Välj nivå', chooseLevelToPlay:'Välj nivå för att spela', level:'Nivå', pastGames:'Tidigare spel',
+        yourGamesInfo:'Här finns dina spel och dina resultat.', playNow:'Spela nu', chooseOperation:'Välj räknesätt', chooseOperationToPlay:'Välj räknesätt för att spela', multiplication:'Multiplikation', multiplicationShort:'Gånger', addition:'Addition', subtraction:'Subtraktion', subtractionShort:'Minus', subtractionLevel:'Upp till 50', subtractionHint:'Starttal upp till 50 · Svaret kan bli 0', division:'Division', divisionShort:'Delat', divisionLevel:'Upp till 80', divisionHint:'Tal upp till 80 · Svaret blir alltid ett heltal', chooseLevel:'Välj nivå', chooseLevelToPlay:'Välj nivå för att spela', level:'Nivå', pastGames:'Tidigare spel',
         noGames:'Du har inte spelat än. Testa ett spel!', clearStats:'Ta bort alla mina resultat',
         gameLabel:'Spel', timerLabel:'Tid på uppgiften', tally:'Klara', playing:'spelar',
         gameInfo:'Räkna ut talet. Du får prova igen om det blir fel!', questionLabel:'Uppgift',
@@ -386,7 +387,7 @@
         chooseLabel:'Choose a player', lion:'Lion', bear:'Bear',
         saveInfo:'Your games are saved in this browser when you tap “Finish”.',
         dashboardLabel:'Player page', switchProfile:'Change player', yourPage:'Your page',
-        yourGamesInfo:'See your games and scores here.', playNow:'Play now', chooseOperation:'Choose a game', chooseOperationToPlay:'Choose a game to play', multiplication:'Multiplication', multiplicationShort:'Multiply', addition:'Addition', subtraction:'Subtraction', subtractionShort:'Subtract', subtractionLevel:'Up to 50', subtractionHint:'Starting numbers up to 50 · Answers can be 0', chooseLevel:'Choose your level', chooseLevelToPlay:'Choose a level to play', level:'Level', pastGames:'Past games',
+        yourGamesInfo:'See your games and scores here.', playNow:'Play now', chooseOperation:'Choose a game', chooseOperationToPlay:'Choose a game to play', multiplication:'Multiplication', multiplicationShort:'Multiply', addition:'Addition', subtraction:'Subtraction', subtractionShort:'Subtract', subtractionLevel:'Up to 50', subtractionHint:'Starting numbers up to 50 · Answers can be 0', division:'Division', divisionShort:'Divide', divisionLevel:'Up to 80', divisionHint:'Numbers up to 80 · Whole-number answers only', chooseLevel:'Choose your level', chooseLevelToPlay:'Choose a level to play', level:'Level', pastGames:'Past games',
         noGames:'No games yet. Try one!', clearStats:'Delete all my results',
         gameLabel:'Game', timerLabel:'Time on this question', tally:'Solved', playing:'is playing',
         gameInfo:'Work it out. If you get it wrong, try again!', questionLabel:'Question',
@@ -419,21 +420,23 @@
       advanced: {first:11,last:20,label:'11–20'},
       addBasic: {minSum:2,maxSum:50,label:'1–50'},
       addAdvanced: {minSum:51,maxSum:100,label:'51–100'},
-      subtract: {maxStart:50}
+      subtract: {maxStart:50},
+      divide: {maxDividend:80,minDivisor:2,maxDivisor:10}
     };
     const OPERATION_LEVELS = {
       multiplication: ['basic','advanced'],
       addition: ['addBasic','addAdvanced'],
-      subtraction: ['subtract']
+      subtraction: ['subtract'],
+      division: ['divide']
     };
     const MAX_SOLVED_PER_GAME = 100;
     // Games saved before operations existed are multiplication games.
     const sessionOperation = session => session.operation === undefined ? 'multiplication' : session.operation;
     const sessionLevel = session => session.level === undefined ? 'basic' : session.level;
-    const levelLabel = level => level === 'subtract' ? t('subtractionLevel') : `${t('level')} ${LEVELS[level].label}`;
+    const levelLabel = level => level === 'subtract' ? t('subtractionLevel') : level === 'divide' ? t('divisionLevel') : `${t('level')} ${LEVELS[level].label}`;
     const operationLabel = operation => t(operation);
-    const operationSymbol = operation => ({multiplication:'×',addition:'+',subtraction:'−'})[operation];
-    const operationAnswer = (operation,a,b) => operation === 'addition' ? a+b : operation === 'subtraction' ? a-b : a*b;
+    const operationSymbol = operation => ({multiplication:'×',addition:'+',subtraction:'−',division:'÷'})[operation];
+    const operationAnswer = (operation,a,b) => operation === 'addition' ? a+b : operation === 'subtraction' ? a-b : operation === 'division' ? a/b : a*b;
     const sessionDescription = session => `${operationLabel(sessionOperation(session))} · ${levelLabel(sessionLevel(session))}`;
     let selectedOperation = null, selectedLevel = null, gameOperation = null, gameLevel = null;
     // A profile has a name, an emoji, an ID, and its own list of games.
@@ -528,6 +531,12 @@
           // Both operands are positive and the result is never negative (0 is allowed).
           return a >= 1 && a <= LEVELS[level].maxStart && b >= 1 && b <= a;
         }
+        if (operation === 'division') {
+          // No division by zero, fractional answers, or dividends above 80.
+          const rules = LEVELS[level];
+          return a >= 1 && a <= rules.maxDividend &&
+            b >= rules.minDivisor && b <= rules.maxDivisor && a % b === 0;
+        }
         const sum = a + b;
         return a >= 1 && b >= 1 && sum >= LEVELS[level].minSum && sum <= LEVELS[level].maxSum;
       };
@@ -597,6 +606,13 @@
         // 1..50 minus 1..starting-number: never negative, and can equal zero.
         for (let a = 1; a <= LEVELS[level].maxStart; a++)
           for (let b = 1; b <= a; b++) pairs.push({a,b});
+      } else if (operation === 'division') {
+        // Reverse multiplication facts for exact division. Divisors 2–10,
+        // dividends up to 80, and only positive whole-number quotients.
+        const {maxDividend,minDivisor,maxDivisor} = LEVELS[level];
+        for (let b = minDivisor; b <= maxDivisor; b++)
+          for (let quotient = 1; quotient * b <= maxDividend; quotient++)
+            pairs.push({a:quotient*b,b});
       }
       return pairs;
     }
@@ -851,7 +867,7 @@
       const levels = selectedOperation ? OPERATION_LEVELS[selectedOperation] : [];
       $('level-controls').hidden = levels.length !== 2;
       $('single-level-info').hidden = levels.length !== 1;
-      if (levels.length === 1) $('single-level-info').textContent = t('subtractionHint');
+      if (levels.length === 1) $('single-level-info').textContent = t(selectedOperation === 'division' ? 'divisionHint' : 'subtractionHint');
       if (levels.length === 2) {
         $('level-basic').textContent = LEVELS[levels[0]].label;
         $('level-advanced').textContent = LEVELS[levels[1]].label;
@@ -876,6 +892,7 @@
     $('operation-multiplication').addEventListener('click', () => chooseOperation('multiplication'));
     $('operation-addition').addEventListener('click', () => chooseOperation('addition'));
     $('operation-subtraction').addEventListener('click', () => chooseOperation('subtraction'));
+    $('operation-division').addEventListener('click', () => chooseOperation('division'));
     $('level-basic').addEventListener('click', () => chooseLevel(0));
     $('level-advanced').addEventListener('click', () => chooseLevel(1));
 
