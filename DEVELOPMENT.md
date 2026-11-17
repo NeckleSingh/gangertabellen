@@ -13,8 +13,8 @@ Product principles
 Learning rules and staged rollout
 - Multiplication keeps its original 1–10 and 11–20 levels: first factor within the selected range, second factor 1–10.
 - Addition has strict answer ranges 1–50 and 51–100; each number being added is at least 1 (so 1 is not itself an achievable sum). Do not include 0 as an addend.
-- Subtraction (planned separately) uses a starting number at most 50, never produces a negative answer, and may produce 0.
-- Division (planned separately) uses a dividend at most 80 with whole-number answers only; never divide by 0.
+- Subtraction uses a starting number at most 50, never produces a negative answer, and may produce 0.
+- Division uses a dividend at most 80 with whole-number answers only; never divide by 0.
 - An operation should not be shown as selectable until its gameplay and history handling are implemented.
 - Correctly solved questions must not repeat within a game; skipped questions can reappear. Keep the current 100-correct-answer limit per game unless explicitly revised.
 - Require an explicit operation choice for each game, and a level choice when the operation has multiple levels. Single-level operations do not need an additional level choice.

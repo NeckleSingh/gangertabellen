@@ -521,7 +521,8 @@
     function validSession(session) {
       if (!session) return false;
       const operation = sessionOperation(session), level = sessionLevel(session);
-      if (!OPERATION_LEVELS[operation]?.includes(level)) return false;
+      if (!Object.prototype.hasOwnProperty.call(OPERATION_LEVELS,operation) ||
+          !OPERATION_LEVELS[operation].includes(level)) return false;
       const validPair = (a,b) => {
         if (!Number.isInteger(a) || !Number.isInteger(b)) return false;
         if (operation === 'multiplication') {
